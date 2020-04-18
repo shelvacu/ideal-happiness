@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://InnerTile.tscn" type="PackedScene" id=1]
+
+[node name="Tile" type="Node2D"]
+
+[node name="AnimatedSprite" parent="." instance=ExtResource( 1 )]
