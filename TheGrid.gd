@@ -1,237 +1,369 @@
 extends Node2D
 
-const Width = 10
-const Height = 10
-
-const InitTiles = [
-	[0, 1, "block"],
-	[1, 1, "block"],
-	[2, 1, "block"],
-	[3, 1, "bridge-fall"],
-	[4, 1, "block"],
-	[5, 1, "block"],
-	[1, 0, "button-depressed"],
-	[9, 9, "block"]
-]
-
-const InitConnections = [
-	[1, 0, 3, 1]
-]
-
-const InitPlayerPos = [0, 5]
-
-var tiles = []
-
 onready var tileScene = preload("res://Tile.tscn")
 
-enum Action { NONE, MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT }
-class ProcessResult:
-	var isFail := false
-	var isTrigger := false
-	var action:int = Action.NONE
+# We won't allow solutions which have the actor travel past these time bounds
+const MIN_TIME = -10
+const MAX_TIME = 10
 
-class TileActor:
-	func _init():
-		pass
-	func process(x:int, y:int, isActive:bool, grid) -> ProcessResult:
-		return ProcessResult.new()
-	func is_solid() -> bool:
-		return false
-	func tile_name() -> String:
-		assert(false)
-		return "unreachable"
-	func duplicate() -> TileActor:
-		return TileActor.new()
+enum Determination { NONE, LOSE, WIN }
+class Reaction:
+	### When the player interacts with a tile, it can trigger new knowledge,
+	### or a win/loss condition
+	var new_facts:Array = [] # of Statement
+	var determination:int = Determination.NONE
+	
+class Tile:
+	func possible_states() -> Array: # of Opaque
+		### Enumerate all the possible "states" a tile could be in.
+		### Each state corresponds to one branch along a fork when the player
+		### encounters this tile. So, stateless objects should return a
+		### one-element array
+		### N.B. the first element of this array is assumed to be the initial
+		### state of the tile at t=-infinity
+		return [null]
+	func react(_time:int, _system:ConstraintSystem) -> Reaction:
+		### called when the player enters this tile
+		return Reaction.new()
+		
+class GoalTile:
+	extends Tile
+	var tile_name = "goal"
+	func react(_time:int, _system:ConstraintSystem) -> Reaction:
+		var reaction = Reaction.new()
+		reaction.determination = Determination.WIN
+		return reaction
+		
+class EmptyTile:
+	extends Tile
+	var tile_name = "empty"
 
-class TileBlock:
-	extends TileActor
-	func is_solid() -> bool:
-		return true
-	func tile_name() -> String:
-		return "block"
-	func duplicate() -> TileActor:
-		return TileBlock.new()
+class ButtonTile:
+	extends Tile
+	var tile_name = "button"
+	var attached: BridgeTile
+	func _init(attached_: BridgeTile):
+		attached = attached_
+		
+	func react(time:int, system:ConstraintSystem) -> Reaction:
+		# find the last known state of the bridge:
+		var last_state = system.value_at(time, attached)
+		# announce a new state for the bridge:
+		var new_fact = null
+		if last_state == BridgeState.SOLID:
+			new_fact = Statement.new(attached, BridgeState.NOT_SOLID, time)
+		if last_state == BridgeState.NOT_SOLID:
+			new_fact = Statement.new(attached, BridgeState.SOLID, time)
+		var reaction = Reaction.new()
+		reaction.new_facts = [new_fact]
+		return reaction
 
-class TileButton:
-	extends TileActor
-	var pressed := false
-	func process(x:int, y:int, isActive:bool, grid) -> ProcessResult:
-		if grid.playerHere(x, y):
-			pressed = true
-		var res := ProcessResult.new()
-		res.isTrigger = pressed
-		return res
-	func tile_name() -> String:
-		if pressed:
-			return "button-pressed"
-		else:
-			return "button-depressed"
-	func duplicate() -> TileActor:
-		var t = TileButton.new()
-		t.pressed = pressed
-		return t
+enum BridgeState { NOT_SOLID, SOLID };
+class BridgeTile:
+	extends Tile
+	var tile_name = "bridge"
+	func possible_states() -> Array:
+		return [BridgeState.NOT_SOLID, BridgeState.SOLID]
+	func react(time:int, system:ConstraintSystem) -> Reaction:
+		### If the bridge is NOT_SOLID, trigger a lose condition
+		var reaction = Reaction.new()
+		var state = system.value_at(time, self)
+		if state == BridgeState.NOT_SOLID:
+			reaction.determination = Determination.LOSE
+		return reaction
 
-class TileBridge:
-	extends TileActor
-	var fall := false
-	func process(x:int, y:int, isActive:bool, grid) -> ProcessResult:
-		fall = !isActive
-		return ProcessResult.new()
-	func is_solid() -> bool:
-		return !fall
-	func tile_name() -> String:
-		if fall:
-			return "bridge-fall"
-		else:
-			return "bridge-nofall"
-	func duplicate() -> TileActor:
-		var t = TileBridge.new()
-		t.fall = fall
-		return t
-
-class TilePortal:
-	extends TileActor
-	var steps:int
-	func _init(steps_:int):
-		steps = steps_
-	func tile_name() -> String:
-		return "portal"
-	func duplicate() -> TileActor:
-		return TilePortal.new(steps)
-
-#class TilePlayer:
-#	extends TileActor
-#	var alive := true
-#	var age := 0
-#	func tile_name() -> String:
-#		if alive:
-#			return "noodly-alive"
-#		else:
-#			return "noodly-dead"
-#	func is_solid() -> bool:
-#		return false
-#	func duplicate() -> TileActor:
-#		var t = TilePlayer.new()
-#		t.alive = alive
-#		t.age = age
-#		return t
-#	#todo
-
+enum Direction {LEFT, RIGHT}
 class Player:
-	var direction:int = Action.MOVE_RIGHT
-	var lifetime:int = 0
+	var direction:int = Direction.RIGHT
+	var x:int = 0
+	var y:int = 0
+	func step():
+		if direction == Direction.LEFT:
+			x -= 1
+		if direction == Direction.RIGHT:
+			x += 1
+	
+	func duplicate():
+		var c = Player.new()
+		c.direction = direction
+		c.x = x
+		c.y = y
+		return c
+		
+class Portal:
 	var x:int
 	var y:int
-	func _init(x_:int, y_:int):
+	var time_delta:int # probably negative
+	func _init(x_:int, y_:int, time_delta_:int):
 		x = x_
 		y = y_
+		time_delta = time_delta_
 
 class Grid:
-	var grid := []
+	var grid := [] # Tile
 	var width:int
 	var height:int
-	var players := [] #Player
-	var connections := [] #x1,y1,x2,y2
 	func _init(width_: int, height_: int):
+		### Initialize with Empty Tiles
 		width = width_
 		height = height_
 		for _a in range(height):
 			var row := []
 			for _b in range(width):
-				row.append([])
+				row.append(EmptyTile.new())
 			grid.append(row)
-	func at(x: int, y: int) -> Array:
+	func at(x: int, y: int) -> Tile:
 		return grid[y][x]
-	func add(x: int, y: int, el: TileActor) -> void:
-		grid[y][x].append(el)
-	func duplicate() -> Grid:
-		var dup = Grid.new(width, height)
-		for y in range(height):
-			for x in range(width):
-				for el in at(x,y):
-					dup.add(x, y, el)
-		return dup
+	func insert(x: int, y: int, el: Tile) -> void:
+		grid[y][x] = el
 
-#class TimelineNode:
-#	var step:int #0: inital setup, 1: noodly appears, hasn't moved yet
-#	var grid:Grid
-#	var next_nodes := []
+class Statement:
+	### A statement claims that the "value" (state) of the provided tile is as
+	### provided, at the given time.
+	### We assume that between any two statements about a tile, its value doesn't
+	### change
+	var tile: Tile
+	var value # Opaque. It comes from Tile.possible_states
+	var time:int
+	func _init(tile_:Tile, value_, time_:int):
+		tile = tile_
+		value = value_
+		time = time_
+		
+class ConstraintSystem:
+	### A ConstraintSystem encodes some things we _assume_ to be true (but have
+	### not proven), i.e. the constraints, and some "facts" which we dereive 
+	### from the constraints as we evaluate a level. These facts could
+	### contradict the constraints, in which case the system is "inconsistent"
+	var constraints:Array # of Statement
+	var facts:Array # of Statement
+	func _init(constraints_, facts_):
+		constraints = constraints_
+		facts = facts_
+	
+	func duplicate():
+		return ConstraintSystem.new([] + constraints, [] + facts)
+	
+	func append_fact(fact: Statement):
+		facts.append(fact)
+	
+	func append_constraint(fact: Statement):
+		constraints.append(fact)
+	
+	func _value_at(time:int, tile:Tile, consider:Array): # -> opaque
+		### find the most recent Statement which is <= time, for the given tile
+		var best_state = null
+		for stmt in consider:
+			if stmt.tile == tile and stmt.time <= time:
+				if best_state == null or stmt.time > best_state.time:
+					best_state = stmt
+		if best_state == null:
+			return null
+		return best_state.value
+	
+	func value_at(time:int, tile:Tile):
+		return _value_at(time, tile, facts + constraints)
+	
+	func is_consistent():
+		### Ensure that all the constraints line up with the facts derived from
+		### them
+		for c in constraints:
+			if _value_at(c.time, c.tile, facts) != c.value:
+				return false
+		return true
 
-class Timeline:
-	var root:Dictionary
-	func _init(root_grid:Grid, player_position:Array):
-		root = {
-			time_step = 0,
-			player_step = 0,
-			grid = root_grid,
-			next_nodes = [],
-			player_parent = null,
-			time_parent = null
-		}
-		#var grid_one = root_grid.duplicate()
-		#var player = TilePlayer.new()
-		#grid_one.add(player_position[0], player_position[1], player)
-		#var next = {
-		#	step = 1,
-		#	grid = grid_one,
-		#	next_nodes = [],
-		#	parent = root
-		#}
-		#root.next_nodes.append(next)
-	func get_parent(node:Dictionary) -> Dictionary:
-		if node.parent == null:
-			var new_root = {
-				time_step = root.time_step - 1,
-				player_step = root.player_step - 1,
-				grid = root.grid.duplicate(),
-				next_nodes = [root],
-				player_parent = null,
-				time_parent = null
-			}
-			var old_root = root
-			root = new_root
-			old_root.player_parent = new_root
-			old_root.time_parent = new_root
-			return new_root
-		else:
-			return node.parent
-	func do_next_step(node:Dictionary) -> Dictionary:
-		pass
-	func do_stuff():
-		pass
+class SolutionQuery:
+	### A SolutionQuery considers one way the level could unfold. We don't know
+	### if it's consistent or not until `is_terminated()` returns true
+	var grid: Grid # reference to the grid. Immutable
+	var time:int
+	var player: Player
+	var portals: Array # of Portal
+	var constraints: ConstraintSystem
+	func _init(grid_:Grid, player_:Player):
+		grid = grid_
+		time = 0
+		player = player_
+		constraints = ConstraintSystem.new([], [])
+		portals = []
+		
+	static func new_from(other:SolutionQuery):
+		### duplicate other, but be smart and don't deep-copy the immutable grid
+		var me = SolutionQuery.new(other.grid, other.player.duplicate())
+		me.time = other.time
+		me.portals = [] + other.portals
+		return me
+		
+	func is_terminated():
+		return time > MAX_TIME or time < MIN_TIME or _determination() != Determination.NONE
+	
+	func is_consistent():
+		return constraints.is_consistent()
+	
+	func _determination():
+		return _tile().react(time, constraints).determination
+	
+	func is_win():
+		return _determination() == Determination.WIN
+	
+	func _tile():
+		return grid.at(player.x, player.y)
+	
+	func _check_portal() -> Portal:
+		### If the player encounters a portal, REMOVE IT, and yield it
+		for p in portals:
+			if p.x == player.x and p.y == player.y:
+				portals.erase(p)
+				return p
+		return null
+	
+	func advance() -> Array: # of SolutionQuery
+		### Advance a tick and return all possible branches
+		time += 1
+		player.step()
+		
+		var portal = _check_portal()
+		if portal != null:
+			time += portal.time_delta
+		
+		# Now add forks for every state this tile could be in
+		var tile = _tile()
+		var new_queries = []
+		for state in tile.possible_states():
+			var new_constraints = constraints.duplicate()
+			if state != null: # ignore trivial (always-true) constraints
+				new_constraints.append_constraint(Statement.new(tile, state, time))
+				
+			for fact in tile.react(time, new_constraints).new_facts:
+				new_constraints.append_fact(fact)
+			
+			var new_query = SolutionQuery.new_from(self)
+			new_query.constraints = new_constraints
+			new_queries.append(new_query)
+		return new_queries
+	
+	static func drive_sols(queries: Array) -> SolutionQuery:
+		### Drive all provided forks, and reduce to the best solution
+		var sols = []
+		for q in queries:
+			var sol = q.drive();
+			if sol:
+				sols.append(sol)
+		
+		# reduce to the best solution
+		var best_sol = null
+		for sol in sols:
+			if best_sol == null:
+				best_sol = sol
+			if best_sol.is_win() and not sol.is_win():
+				continue
+			if sol.is_win() and not best_sol.is_win():
+				best_sol = sol
+			if sol.time < best_sol.time:
+				best_sol = sol  # TODO: should be ELAPSED time.
+		return best_sol
+		
+	func drive() -> SolutionQuery:
+		### drive to completion, returning the "best" solution
+		if is_terminated():
+			if is_consistent():
+				return self
+			return null
+		# Advance once, then drive all the forks to completion
+		return SolutionQuery.drive_sols(self.advance())
+		
+	func populate_default_constraints() -> void:
+		### constrain that all tiles be in their default state at t=MIN_TIME
+		for row in grid.grid:
+			for tile in row:
+				var default_state = tile.possible_states()[0]
+				if default_state == null:
+					continue
+				self.constraints.append_fact(Statement.new(tile, default_state, 0))
+		
+#	func drive_from_start() -> SolutionQuery:
+#		# need to consider ALL COMBINATIONS of constraints
+#		# we end up with len(constraint_sets) for each solution query.
+#		var constraint_sets = [];
+#		for row in grid.grid:
+#			for tile in row:
+#				var states = tile.possible_states()
+#				if states == [null]:
+#					continue
+#				var these_constraints = []
+#				for state in states:
+#					these_constraints.append(Statement.new(tile, state, 0))
+#				constraint_sets.append(these_constraints)
+#
+#		# Now consider all combinations of constraints
+#		var constraint_systems = [ConstraintSystem.new([], [])]
+#		for set in constraint_sets:
+#			var new_constraint_systems = []
+#			for variant in set:
+#				for sys in constraint_systems:
+#					var new_sys = sys.duplicate()
+#					new_sys.append_constraint(variant)
+#					new_constraint_systems.append(new_sys)
+#			constraint_systems = new_constraint_systems
+#
+#		var queries = []
+#		for sys in constraint_systems:
+#			var query = SolutionQuery.new(grid, player.duplicate());
+#			query.constraints = sys
+#			queries.append(query)
+#		return drive_sols(queries)
+		
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	for _a in range(Width):
-		var row := []
-		for _b in range(Height):
-			var cell := []
-			row.append(cell)
-		tiles.append(row)
-	for tilespec in InitTiles:
-		match tilespec:
-# warning-ignore:unassigned_variable
-# warning-ignore:unassigned_variable
-# warning-ignore:unassigned_variable
-			[var x, var y, var name]:
-				print(name)
-				tiles[y][x].append(name)
-			_:
-				assert(false)
-	tiles[InitPlayerPos[0]][InitPlayerPos[1]].append("noodly-alive")
-	var rowIdx := 0
-	for row in tiles:
-		var cellIdx := 0
-		for cell in row:
-			for tileName in cell:
-				var tileNode:Node2D = tileScene.instance()
-				tileNode.get_children()[0].animation = tileName
-				tileNode.position.x = cellIdx * 50
-				tileNode.position.y = rowIdx * 50
-				self.add_child(tileNode)
-			cellIdx += 1
-		rowIdx += 1
+	print("_ready")
+	var grid = Grid.new(20, 1)
+	grid.insert(9, 0, GoalTile.new())
+	
+	var bridge = BridgeTile.new()
+	grid.insert(3, 0, bridge)
+	
+	var button = ButtonTile.new(bridge)
+	grid.insert(5, 0, button)
+	
+	var player = Player.new()
+	var query = SolutionQuery.new(grid, player)
+	query.populate_default_constraints()
+	query.portals.append(Portal.new(4, 0, -3))
+	
+	var sol = query.drive()
+	print(sol)
 
+#func _ready():
+#	for _a in range(Width):
+#		var row := []
+#		for _b in range(Height):
+#			var cell := []
+#			row.append(cell)
+#		tiles.append(row)
+#	for tilespec in InitTiles:
+#		match tilespec:
+## warning-ignore:unassigned_variable
+## warning-ignore:unassigned_variable
+## warning-ignore:unassigned_variable
+#			[var x, var y, var name]:
+#				print(name)
+#				tiles[y][x].append(name)
+#			_:
+#				assert(false)
+#	tiles[InitPlayerPos[0]][InitPlayerPos[1]].append("noodly-alive")
+#	var rowIdx := 0
+#	for row in tiles:
+#		var cellIdx := 0
+#		for cell in row:
+#			for tileName in cell:
+#				var tileNode:Node2D = tileScene.instance()
+#				tileNode.get_children()[0].animation = tileName
+#				tileNode.position.x = cellIdx * 50
+#				tileNode.position.y = rowIdx * 50
+#				self.add_child(tileNode)
+#			cellIdx += 1
+#		rowIdx += 1
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 #func _process(delta):
