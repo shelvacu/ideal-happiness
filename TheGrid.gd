@@ -29,6 +29,7 @@ class Tile:
 class GoalTile:
 	extends Tile
 	var tile_name = "goal"
+	var ascii = "F"
 	func react(_time:int, _system:ConstraintSystem) -> Reaction:
 		var reaction = Reaction.new()
 		reaction.determination = Determination.WIN
@@ -37,10 +38,12 @@ class GoalTile:
 class EmptyTile:
 	extends Tile
 	var tile_name = "empty"
+	var ascii = " "
 
 class ButtonTile:
 	extends Tile
-	var tile_name = "button"
+	var tile_name = "button-depressed"
+	var ascii = "n"
 	var attached: BridgeTile
 	func _init(attached_: BridgeTile):
 		attached = attached_
@@ -61,7 +64,8 @@ class ButtonTile:
 enum BridgeState { NOT_SOLID, SOLID };
 class BridgeTile:
 	extends Tile
-	var tile_name = "bridge"
+	var tile_name = "bridge-nofall"
+	var ascii = "|"
 	func possible_states() -> Array:
 		return [BridgeState.NOT_SOLID, BridgeState.SOLID]
 	func react(time:int, system:ConstraintSystem) -> Reaction:
@@ -94,6 +98,7 @@ class Portal:
 	var x:int
 	var y:int
 	var time_delta:int # probably negative
+	var ascii = "@"
 	func _init(x_:int, y_:int, time_delta_:int):
 		x = x_
 		y = y_
@@ -116,6 +121,13 @@ class Grid:
 		return grid[y][x]
 	func insert(x: int, y: int, el: Tile) -> void:
 		grid[y][x] = el
+	func ascii() -> String:
+		var res := ""
+		for line in self.grid:
+			for el in line:
+				res = res + el.ascii
+			res = res + "\n"
+		return res
 
 class Statement:
 	### A statement claims that the "value" (state) of the provided tile is as
@@ -186,7 +198,19 @@ class SolutionQuery:
 		player = player_
 		constraints = ConstraintSystem.new([], [])
 		portals = []
-		
+
+	func ascii() -> String:
+		var res := grid.ascii()
+		for y in range(grid.height):
+			for x in range(grid.width):
+				var c = " "
+				for p in portals:
+					if p.x == x and p.y == y: c = "@"
+				if player.x == x and player.y == y: c = "p"
+				res = res + c
+			res = res + "\nt:" + String(time)
+		return res
+
 	static func new_from(other:SolutionQuery):
 		### duplicate other, but be smart and don't deep-copy the immutable grid
 		var me = SolutionQuery.new(other.grid, other.player.duplicate())
@@ -264,6 +288,7 @@ class SolutionQuery:
 		return best_sol
 		
 	func drive() -> SolutionQuery:
+		print(ascii())
 		### drive to completion, returning the "best" solution
 		if is_terminated():
 			if is_consistent():
@@ -317,22 +342,58 @@ class SolutionQuery:
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("_ready")
+	#012345678901234
+	#P || @n@n F
+	# P|| @n@n F
+	#  P| @P@n F
+	#  |P @n@P F
+	#  ||P@n@n F
+	#  || @
 	var grid = Grid.new(20, 1)
-	grid.insert(9, 0, GoalTile.new())
+	grid.insert(10, 0, GoalTile.new())
 	
-	var bridge = BridgeTile.new()
-	grid.insert(3, 0, bridge)
+	var bridge1 = BridgeTile.new()
+	var bridge2 = BridgeTile.new()
+	grid.insert(2, 0, bridge1)
+	grid.insert(3, 0, bridge2)
 	
-	var button = ButtonTile.new(bridge)
-	grid.insert(5, 0, button)
+	var button1 = ButtonTile.new(bridge1)
+	var button2 = ButtonTile.new(bridge2)
+	grid.insert(6, 0, button1)
+	grid.insert(8, 0, button2)
 	
 	var player = Player.new()
 	var query = SolutionQuery.new(grid, player)
 	query.populate_default_constraints()
-	query.portals.append(Portal.new(4, 0, -3))
+	query.portals.append(Portal.new(5, 0, -4))
+	query.portals.append(Portal.new(7, 0, -1))
 	
 	var sol = query.drive()
 	print(sol)
+	var rowIdx := 0
+	for row in sol.grid.grid:
+		var cellIdx := 0
+		for tile in row:
+			var tileNode:Node2D = tileScene.instance()
+			tileNode.get_children()[0].animation = tile.tile_name
+			tileNode.position.x = cellIdx * 50
+			tileNode.position.y = rowIdx * 50
+			self.add_child(tileNode)
+			cellIdx += 1
+		rowIdx += 1
+	for portal in sol.portals:
+		var tile_node:Node2D = tileScene.instance()
+		tile_node.get_children()[0].animation = "portal"
+		tile_node.position.x = portal.x * 50
+		tile_node.position.y = portal.y * 50
+		self.add_child(tile_node)
+
+	var tile_node:Node2D = tileScene.instance()
+	tile_node.get_children()[0].animation = "noodly-alive"
+	tile_node.position.x = sol.player.x * 50
+	tile_node.position.y = sol.player.y * 50
+	self.add_child(tile_node)
+	
 
 #func _ready():
 #	for _a in range(Width):
