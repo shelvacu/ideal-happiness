@@ -2,14 +2,15 @@ extends Object
 
 # We won't allow solutions which have the actor travel past these time bounds
 const MIN_TIME = -10
-const MAX_TIME = 100
+const MAX_TIME = 20
 
-enum Determination { NONE, LOSE, WIN }
+enum Determination { INCONSISTENT, INCONCLUSIVE, LOSE, WIN }
 class Reaction:
 	### When the player interacts with a tile, it can trigger new knowledge,
 	### or a win/loss condition
 	var new_facts:Array = [] # of Statement
-	var determination:int = Determination.NONE
+	var new_constraints:Array = [] # of Constraint
+	var reverse_direction:bool # Have the player move in the opposite direction
 	
 class Tile:
 	func possible_states() -> Array: # of Opaque
@@ -20,7 +21,7 @@ class Tile:
 		### N.B. the first element of this array is assumed to be the initial
 		### state of the tile at t=-infinity
 		return [null]
-	func react(_time:int, _system:ConstraintSystem) -> Reaction:
+	func react(_time:int) -> Reaction:
 		### called when the player enters this tile
 		return Reaction.new()
 		
@@ -28,9 +29,19 @@ class GoalTile:
 	extends Tile
 	var tile_name = "goal"
 	var ascii = "F"
-	func react(_time:int, _system:ConstraintSystem) -> Reaction:
+	func react(time:int) -> Reaction:
 		var reaction = Reaction.new()
-		reaction.determination = Determination.WIN
+		reaction.new_constraints = [Constraint.new(self, null, time, ConstraintType.WIN)]
+		return reaction
+		
+class EdgeTile:
+	### Placed at the edge of the level to prevent OOB accesses.
+	extends Tile
+	var tile_name = "empty"  # XXX colin: should be 'edge', maybe
+	var ascii = "."
+	func react(time:int) -> Reaction:
+		var reaction = Reaction.new()
+		reaction.reverse_direction = true
 		return reaction
 		
 class EmptyTile:
@@ -46,17 +57,10 @@ class ButtonTile:
 	func _init(attached_: BridgeTile):
 		attached = attached_
 		
-	func react(time:int, system:ConstraintSystem) -> Reaction:
-		# find the last known state of the bridge:
-		var last_state = system.value_at(time - 1, attached)
-		# announce a new state for the bridge:
-		var new_fact = null
-		if last_state == BridgeState.SOLID:
-			new_fact = Statement.new(attached, BridgeState.NOT_SOLID, time)
-		if last_state == BridgeState.NOT_SOLID:
-			new_fact = Statement.new(attached, BridgeState.SOLID, time)
+	func react(time:int) -> Reaction:
+		# cause the state of the attached bridge to toggle
 		var reaction = Reaction.new()
-		reaction.new_facts = [new_fact]
+		reaction.new_facts = [Statement.new(attached, StatementToggle.new(), time)]
 		return reaction
 
 enum BridgeState { NOT_SOLID, SOLID };
@@ -68,16 +72,15 @@ class BridgeTile:
 	func _init(default_not_solid_:bool = true):
 		default_not_solid = default_not_solid_
 	func possible_states() -> Array:
+		# The first element is always the default state
 		if default_not_solid:
 			return [BridgeState.NOT_SOLID, BridgeState.SOLID]
 		else:
 			return [BridgeState.SOLID, BridgeState.NOT_SOLID]
-	func react(time:int, system:ConstraintSystem) -> Reaction:
+	func react(time:int) -> Reaction:
 		### If the bridge is NOT_SOLID, trigger a lose condition
 		var reaction = Reaction.new()
-		var state = system.value_at(time, self)
-		if state == BridgeState.NOT_SOLID:
-			reaction.determination = Determination.LOSE
+		reaction.new_constraints = [Constraint.new(self, BridgeState.NOT_SOLID, time, ConstraintType.LOSE)]
 		return reaction
 
 enum Direction {LEFT, RIGHT}
@@ -133,27 +136,82 @@ class Grid:
 			res = res + "\n"
 		return res
 
+class StatementValue:
+	### Statement.operation option for `x = <value>` where `x` is a state
+	var value # Opaque. It comes from Tile.possible_states
+	func _init(value_):
+		self.value = value_
+	func ascii() -> String:
+		return String(value)
+
+class StatementToggle:
+	### Statement.operation option for `x = !x`
+	func ascii() -> String:
+		return "Toggle"
+
 class Statement:
 	### A statement claims that the "value" (state) of the provided tile is as
 	### provided, at the given time.
 	### We assume that between any two statements about a tile, its value doesn't
 	### change
-	var tile: Tile
-	var value # Opaque. It comes from Tile.possible_states
 	var time:int
-	func _init(tile_:Tile, value_, time_:int):
+	var tile: Tile
+	var operation # Either StatementValue or StatementMap
+
+	func _init(tile_:Tile, operation_, time_:int):
+		tile = tile_
+		operation = operation_
+		time = time_
+	func ascii() -> String:
+		return tile.ascii + String(tile.get_instance_id()) + "=" + operation.ascii() + "@" + String(time)
+	
+	static func is_earlier(a:Statement, b:Statement) -> bool:
+		# N.B. must be deterministic
+		if a.time < b.time:
+			return true
+		elif a.time > b.time:
+			return false
+		if a.tile < b.tile:
+			return true
+		elif a.tile > b.tile:
+			return false
+		return a.operation < b.operation
+		# Blegh, should be able to do it like this:
+		# return [a.time, a.tile, a.operation] < [b.time, b.tile, b.operation]
+		
+enum ConstraintType { REQUIRED, WIN, LOSE }
+class Constraint:
+	### A Constraint represents some condition which "must hold" but isn't
+	### provable until the system terminates.
+	### The ConstraintType decsribes the consequence of meeting the constraint.
+	### `REQUIRED` means that if the constraint _isn't_ met, the system is in an
+	### inconsistent state.
+	### `WIN` and `LOSE` mean that meeting the Constraint triggers termination
+	### (as either a win or a lose).
+	# XXX colin: maybe WIN and LOSE aren't really Constraints, but
+	# would be better represented as "termination conditions"
+	var time:int
+	var tile:Tile
+	var type:int # ConstraintType
+	var value # Opaque
+	func _init(tile_: Tile, value_, time_:int, type_:int):
 		tile = tile_
 		value = value_
 		time = time_
+		type = type_
+		
 	func ascii() -> String:
-		return tile.ascii + String(tile.get_instance_id()) + "=" + String(value) + "@" + String(time)
+		var v = "null"
+		if value != null:
+			v = String(value)
+		return tile.ascii + String(tile.get_instance_id()) + "=" + v + "@" + String(time)
 		
 class ConstraintSystem:
 	### A ConstraintSystem encodes some things we _assume_ to be true (but have
 	### not proven), i.e. the constraints, and some "facts" which we dereive 
 	### from the constraints as we evaluate a level. These facts could
 	### contradict the constraints, in which case the system is "inconsistent"
-	var constraints:Array # of Statement
+	var constraints:Array # of Constraint
 	var facts:Array # of Statement
 	func _init(constraints_, facts_):
 		constraints = constraints_
@@ -175,30 +233,43 @@ class ConstraintSystem:
 	func append_fact(fact: Statement):
 		facts.append(fact)
 	
-	func append_constraint(fact: Statement):
-		constraints.append(fact)
+	func append_constraint(constraint: Constraint):
+		constraints.append(constraint)
 	
-	func _value_at(time:int, tile:Tile, consider:Array): # -> opaque
-		### find the most recent Statement which is <= time, for the given tile
-		var best_state = null
-		for stmt in consider:
-			if stmt.tile == tile and stmt.time <= time:
-				if best_state == null or stmt.time > best_state.time:
-					best_state = stmt
-		if best_state == null:
-			return null
-		return best_state.value
+	func value_at(time:int, tile:Tile): # -> opaque
+		### Evaluate the facts about this tile up through the provided time
+		var state = null
+		for fact in facts:
+			if fact.time > time:
+				break
+			if fact.tile != tile:
+				continue
+			if fact.operation is StatementValue:
+				state = fact.operation.value
+			elif fact.operation is StatementToggle:
+				assert(state == 0 or state == 1)
+				state = 1 - state
+			else:
+				assert(false) # Unknown StatementOperation!
+		return state
 	
-	func value_at(time:int, tile:Tile):
-		return _value_at(time, tile, facts + constraints)
-	
-	func is_consistent():
-		### Ensure that all the constraints line up with the facts derived from
-		### them
+	func determination() -> int: # returns Determination
+		var is_win = false
+		var is_lose = false
 		for c in constraints:
-			if _value_at(c.time, c.tile, facts) != c.value:
-				return false
-		return true
+			var value = value_at(c.time, c.tile)
+			if c.type == ConstraintType.REQUIRED and c.value != value:
+				return Determination.INCONSISTENT
+			elif c.type == ConstraintType.WIN and c.value == value:
+				is_win = true
+			elif c.type == ConstraintType.LOSE and c.value == value:
+				is_lose = true
+		if is_win:
+			return Determination.WIN
+		elif is_lose:
+			return Determination.LOSE
+		else:
+			return Determination.INCONCLUSIVE
 
 class SolutionQuery:
 	### A SolutionQuery considers one way the level could unfold. We don't know
@@ -241,13 +312,14 @@ class SolutionQuery:
 		return me
 		
 	func is_terminated():
-		return time > MAX_TIME or time < MIN_TIME or _determination() != Determination.NONE
+		var det = _determination()
+		return time > MAX_TIME or time < MIN_TIME or det == Determination.WIN or det == Determination.LOSE
 	
 	func is_consistent():
-		return constraints.is_consistent()
+		return _determination() != Determination.INCONSISTENT
 	
 	func _determination():
-		return _tile().react(time, constraints).determination
+		return constraints.determination()
 	
 	func is_win():
 		return _determination() == Determination.WIN
@@ -278,10 +350,16 @@ class SolutionQuery:
 		for state in tile.possible_states():
 			var new_constraints = constraints.duplicate()
 			if state != null: # ignore trivial (always-true) constraints
-				new_constraints.append_constraint(Statement.new(tile, state, time))
+				new_constraints.append_constraint(Constraint.new( \
+					tile, state, time, ConstraintType.REQUIRED))
 				
-			for fact in tile.react(time, new_constraints).new_facts:
+			var reaction = tile.react(time);
+			for fact in reaction.new_facts:
 				new_constraints.append_fact(fact)
+			for constraint in reaction.new_constraints:
+				new_constraints.append_constraint(constraint)
+			if reaction.reverse_direction:
+				self.player.direction = 1 - self.player.direction
 			
 			var new_query = SolutionQuery.new_from(self)
 			new_query.constraints = new_constraints
@@ -326,7 +404,8 @@ class SolutionQuery:
 				var default_state = tile.possible_states()[0]
 				if default_state == null:
 					continue
-				self.constraints.append_fact(Statement.new(tile, default_state, 0))
+				self.constraints.append_fact(Statement.new( \
+					tile, StatementValue.new(default_state), MIN_TIME))
 		
 #	func drive_from_start() -> SolutionQuery:
 #		# need to consider ALL COMBINATIONS of constraints
@@ -381,6 +460,8 @@ static func query_from_ascii(level:String, connections:Array, portals:Array):
 				bridge_tiles.append(tile)
 			"F":
 				tile = GoalTile.new()
+			".":
+				tile = EdgeTile.new()
 		if tile != null:
 			grid.insert(idx, 0, tile)
 	var btn_idx := 0

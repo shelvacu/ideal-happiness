@@ -8,7 +8,10 @@ func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	var query = PuzzleLogic.query_from_ascii("p |@n n@- F", [0,1], [-2,-3])
+	var query = PuzzleLogic.query_from_ascii(".p |@n n@- F.", [0,1], [-2,-3])
+	
+	# Demo query: Change [-2] (portal time delta) to [-1], and game will lose
+	#var query = PuzzleLogic.query_from_ascii(".p  |@n  F.", [0], [-2])
 	
 	var sol = query.drive()
 	print(sol)
