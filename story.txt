@@ -1,0 +1,103 @@
+[ Prolog ]
+
+(Picture) An asteroid falls from the sky.
+
+(Level) Forest level with asteroid in sky
+
+    * Trish stands in scene, idling
+
+    * Robot stands in scene, idling
+
+    Trish: Hopeless! There's no way we can stop this asteroid from striking Earth!
+
+    Robot: *Inquisitive beeping*
+
+    Trish: No, Robot, a nuclear explosion would just shatter it.
+
+    Trish: Without a way to destroy the asteroid, we're doomed.
+
+    Robot: *Contemplative beeping*
+
+    Trish: No, no, we couldn't divert its path this close.
+
+    Robot: *Pensive beeping*
+
+    Trish: As cool as that would be, I have never seen a bubble blower that large.
+
+    Robot: *Concerned beeping*
+
+    Trish: Impact in fifteen minutes.
+
+    Robot: *Acquiescent beeping*
+
+    Trish: It was good knowing you to, Robot.
+
+    * Portal opens in scene
+
+    * Time machine prop falls out of portal
+
+    * Blue print prop falls out of portal
+
+    * Portal closes
+
+    Trish: What's this!?
+
+    Robot: *Suspicious beeping*
+
+    * Trish walks to props
+
+    * Props dissapear
+
+    Trish: It appears to be a handheld time machine and blueprints for an anti-matter bomb that will completely destroy the asteroid!
+
+    Robot: *Excited beeping*
+
+    Trish: Quick, Robot. We need to go acquire: Nuclear Control Rod, Annihilium, Anti-Matter, and Deus Ex Mechanism.
+
+    Robot: *Exhortative beeping*
+
+    Trish: Ah, you are right. We should probably travel back a few years to buy some time.
+
+    * Portal opens
+
+    * Trish and Robot exit through portal
+
+(Picture) Title screen
+
+[ Chapter 1: Nuclear Control Rod ]
+
+(Picture) Destroyed Nuclear Power Plant
+
+    Trish: This nuclear power plant was abandoned after a meltdown.
+
+    Trish: We've travelled back just in time to nab a Nuclear Control Rod!
+
+    Trish: It's too dangerous in there for me, but you won't be bothered by the radiation.
+
+    Trish: I'm counting on you, Robot.
+
+    Robot: *Understanding beeping*
+
+    Trish: The salvage team will be here in a few hours, so let's hurry along.
+
+    Trish: It's going to be difficult to navigate in there.
+
+    Trish: I'll help you by using the time machine.
+
+    Robot: *Determined beeping*
+
+[ Chapter 2: Annihilium ]
+
+WIP
+
+[ Chapter 3: Anti-Matter ]
+
+WIP
+
+[ Chapter 4: Deus Ex Mechanism ]
+
+WIP
+
+[ Epilog ]
+
+WIP
