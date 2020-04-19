@@ -455,6 +455,7 @@ class Solution:
 		for tick in range(query_.tick + 1):
 			var states_at_this_time = player_states.get(time, [])
 			states_at_this_time.append(query_.player_at_tick(tick))
+			player_states[time] = states_at_this_time
 			var portal = query_.portal_at_tick(tick)
 			if portal != null:
 				time += portal.time_delta

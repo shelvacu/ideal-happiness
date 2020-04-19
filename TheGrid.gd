@@ -3,6 +3,15 @@ extends Node2D
 onready var tile_scene = preload("res://Tile.tscn")
 const PuzzleLogic = preload("PuzzleLogic.gd")
 
+# How many seconds to spend on each frame of the solution.
+const STEP_TIME:float = 1.0
+
+var sol:PuzzleLogic.Solution
+# time, in seconds, since the start of the scene
+var time_elapsed:float = 0.0
+# These are the players visible on screen. We add or remove them over time
+var player_nodes:Array = []
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("_ready")
@@ -13,10 +22,10 @@ func _ready():
 	# Demo query: Change [-2] (portal time delta) to [-1], and game will lose
 	#var query = PuzzleLogic.query_from_ascii(".p  |@n  F.", [0], [-2])
 	
-	var sol = query.drive()
+	sol = query.drive()
 	print(sol)
 	var rowIdx := 0
-	for row in sol.query.grid.grid:
+	for row in query.grid.grid:
 		var cellIdx := 0
 		for tile in row:
 			var tile_node:Node2D = tile_scene.instance()
@@ -26,51 +35,27 @@ func _ready():
 			self.add_child(tile_node)
 			cellIdx += 1
 		rowIdx += 1
-	for portal in sol.query.portals:
+	for portal in query.portals:
 		var tile_node:Node2D = tile_scene.instance()
 		tile_node.get_children()[0].animation = "portal"
 		tile_node.position.x = portal.x * 50
 		tile_node.position.y = portal.y * 50
 		self.add_child(tile_node)
 
-	var tile_node:Node2D = tile_scene.instance()
-	tile_node.get_children()[0].animation = "noodly-alive"
-	tile_node.position.x = sol.query.player().x * 50
-	tile_node.position.y = sol.query.player().y * 50
-	self.add_child(tile_node)
-	
-
-#func _ready():
-#	for _a in range(Width):
-#		var row := []
-#		for _b in range(Height):
-#			var cell := []
-#			row.append(cell)
-#		tiles.append(row)
-#	for tilespec in InitTiles:
-#		match tilespec:
-## warning-ignore:unassigned_variable
-## warning-ignore:unassigned_variable
-## warning-ignore:unassigned_variable
-#			[var x, var y, var name]:
-#				print(name)
-#				tiles[y][x].append(name)
-#			_:
-#				assert(false)
-#	tiles[InitPlayerPos[0]][InitPlayerPos[1]].append("noodly-alive")
-#	var rowIdx := 0
-#	for row in tiles:
-#		var cellIdx := 0
-#		for cell in row:
-#			for tileName in cell:
-#				var tileNode:Node2D = tileScene.instance()
-#				tileNode.get_children()[0].animation = tileName
-#				tileNode.position.x = cellIdx * 50
-#				tileNode.position.y = rowIdx * 50
-#				self.add_child(tileNode)
-#			cellIdx += 1
-#		rowIdx += 1
-
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-#func _process(delta):
-#	pass
+func _process(delta:float):
+	time_elapsed += delta
+	var frame = int(time_elapsed / STEP_TIME)
+	var new_player_nodes = []
+	for player in sol.player_states_at_frame(frame):
+		var player_node:Node2D = tile_scene.instance()
+		player_node.get_children()[0].animation = "noodly-alive"
+		player_node.position.x = player.x * 50
+		player_node.position.y = player.y * 50
+		new_player_nodes.append(player_node)
+
+	for node in player_nodes:
+		self.remove_child(node)
+	for node in new_player_nodes:
+		self.add_child(node)
+	player_nodes = new_player_nodes
