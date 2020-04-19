@@ -50,7 +50,7 @@ class ButtonTile:
 		
 	func react(time:int, system:ConstraintSystem) -> Reaction:
 		# find the last known state of the bridge:
-		var last_state = system.value_at(time, attached)
+		var last_state = system.value_at(time - 1, attached)
 		# announce a new state for the bridge:
 		var new_fact = null
 		if last_state == BridgeState.SOLID:
@@ -66,8 +66,14 @@ class BridgeTile:
 	extends Tile
 	var tile_name = "bridge-nofall"
 	var ascii = "|"
+	var default_not_solid:bool
+	func _init(default_not_solid_:bool = true):
+		default_not_solid = default_not_solid_
 	func possible_states() -> Array:
-		return [BridgeState.NOT_SOLID, BridgeState.SOLID]
+		if default_not_solid:
+			return [BridgeState.NOT_SOLID, BridgeState.SOLID]
+		else:
+			return [BridgeState.SOLID, BridgeState.NOT_SOLID]
 	func react(time:int, system:ConstraintSystem) -> Reaction:
 		### If the bridge is NOT_SOLID, trigger a lose condition
 		var reaction = Reaction.new()
@@ -141,6 +147,8 @@ class Statement:
 		tile = tile_
 		value = value_
 		time = time_
+	func ascii() -> String:
+		return tile.ascii + "=" + String(value) + "@" + String(time)
 		
 class ConstraintSystem:
 	### A ConstraintSystem encodes some things we _assume_ to be true (but have
@@ -152,6 +160,16 @@ class ConstraintSystem:
 	func _init(constraints_, facts_):
 		constraints = constraints_
 		facts = facts_
+		
+	func ascii() -> String:
+		var res := "cn:["
+		for con in constraints:
+			res = res + con.ascii() + ","
+		res = res + "] f:["
+		for fact in facts:
+			res = res + fact.ascii() + ","
+		res = res + "]"
+		return res
 	
 	func duplicate():
 		return ConstraintSystem.new([] + constraints, [] + facts)
@@ -209,6 +227,12 @@ class SolutionQuery:
 				if player.x == x and player.y == y: c = "p"
 				res = res + c
 			res = res + "\nt:" + String(time)
+			var c
+			if is_consistent():
+				c = "y"
+			else:
+				c = "n"
+			res = res + " c:" + c + " " + constraints.ascii()
 		return res
 
 	static func new_from(other:SolutionQuery):
@@ -337,36 +361,74 @@ class SolutionQuery:
 #			query.constraints = sys
 #			queries.append(query)
 #		return drive_sols(queries)
-		
+
+func query_from_ascii(level:String, connections:Array, portals:Array):
+	var grid = Grid.new(level.length(), 1)
+	var bridge_tiles := []
+	for idx in range(level.length()):
+		var c = level[idx]
+		var tile = null
+		match c:
+			"p":
+				pass #ignored for now
+			" ":
+				pass
+			"|":
+				tile = BridgeTile.new(true)
+				bridge_tiles.append(tile)
+			"-":
+				tile = BridgeTile.new(false)
+				bridge_tiles.append(tile)
+			"F":
+				tile = GoalTile.new()
+		if tile != null:
+			grid.insert(idx, 0, tile)
+	var btn_idx := 0
+	for idx in range(level.length()):
+		var c = level[idx]
+		if c == "n":
+			var tile = ButtonTile.new(bridge_tiles[connections[btn_idx]])
+			grid.insert(idx, 0, tile)
+			btn_idx += 1
+	var player = Player.new()
+	var query = SolutionQuery.new(grid, player)
+	query.populate_default_constraints()
+	var portal_idx := 0
+	for idx in range(level.length()):
+		var c = level[idx]
+		if c == "@":
+			query.portals.append(Portal.new(idx, 0, portals[portal_idx]))
+			portal_idx += 1
+	return query
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("_ready")
 	#012345678901234
-	#P || @n@n F
-	# P|| @n@n F
-	#  P| @P@n F
-	#  |P @n@P F
-	#  ||P@n@n F
-	#  || @
+	#P |||@n@n@nF
 	var grid = Grid.new(20, 1)
-	grid.insert(10, 0, GoalTile.new())
+	grid.insert(11, 0, GoalTile.new())
 	
 	var bridge1 = BridgeTile.new()
 	var bridge2 = BridgeTile.new()
+	var bridge3 = BridgeTile.new()
 	grid.insert(2, 0, bridge1)
 	grid.insert(3, 0, bridge2)
+	grid.insert(4, 0, bridge3)
 	
 	var button1 = ButtonTile.new(bridge1)
 	var button2 = ButtonTile.new(bridge2)
+	var button3 = ButtonTile.new(bridge3)
 	grid.insert(6, 0, button1)
 	grid.insert(8, 0, button2)
+	grid.insert(10, 0, button3)
 	
 	var player = Player.new()
 	var query = SolutionQuery.new(grid, player)
 	query.populate_default_constraints()
 	query.portals.append(Portal.new(5, 0, -4))
 	query.portals.append(Portal.new(7, 0, -1))
+	query.portals.append(Portal.new(9, 0, -1))
 	
 	var sol = query.drive()
 	print(sol)
