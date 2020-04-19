@@ -365,12 +365,14 @@ class SolutionQuery:
 func query_from_ascii(level:String, connections:Array, portals:Array):
 	var grid = Grid.new(level.length(), 1)
 	var bridge_tiles := []
+	var player_x := 0
+	var player_y := 0
 	for idx in range(level.length()):
 		var c = level[idx]
 		var tile = null
 		match c:
 			"p":
-				pass #ignored for now
+				player_x = idx
 			" ":
 				pass
 			"|":
@@ -391,6 +393,8 @@ func query_from_ascii(level:String, connections:Array, portals:Array):
 			grid.insert(idx, 0, tile)
 			btn_idx += 1
 	var player = Player.new()
+	player.x = player_x
+	player.y = player_y
 	var query = SolutionQuery.new(grid, player)
 	query.populate_default_constraints()
 	var portal_idx := 0
@@ -406,29 +410,7 @@ func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	var grid = Grid.new(20, 1)
-	grid.insert(11, 0, GoalTile.new())
-	
-	var bridge1 = BridgeTile.new()
-	var bridge2 = BridgeTile.new()
-	var bridge3 = BridgeTile.new()
-	grid.insert(2, 0, bridge1)
-	grid.insert(3, 0, bridge2)
-	grid.insert(4, 0, bridge3)
-	
-	var button1 = ButtonTile.new(bridge1)
-	var button2 = ButtonTile.new(bridge2)
-	var button3 = ButtonTile.new(bridge3)
-	grid.insert(6, 0, button1)
-	grid.insert(8, 0, button2)
-	grid.insert(10, 0, button3)
-	
-	var player = Player.new()
-	var query = SolutionQuery.new(grid, player)
-	query.populate_default_constraints()
-	query.portals.append(Portal.new(5, 0, -4))
-	query.portals.append(Portal.new(7, 0, -1))
-	query.portals.append(Portal.new(9, 0, -1))
+	var query = query_from_ascii("p |||@n@n@nF", [0,1,2], [-4,-1,-1])
 	
 	var sol = query.drive()
 	print(sol)
