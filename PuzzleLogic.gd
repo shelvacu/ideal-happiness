@@ -275,19 +275,23 @@ class SolutionQuery:
 	### A SolutionQuery considers one way the level could unfold. We don't know
 	### if it's consistent or not until `is_terminated()` returns true
 	var grid: Grid # reference to the grid. Immutable
+	## The `tick` is the time "as experienced by the robot". It increases monotonically
+	var tick:int
 	var time:int
-	var player: Player
-	var portals: Array # of Portal
+	var player_states: Dictionary # maps int (tick) to Player (state at that tick)
+	var portals: Dictionary # from Portal to null (if unsolved) or int (tick entered, if solved)
 	var constraints: ConstraintSystem
 	func _init(grid_:Grid, player_:Player):
 		grid = grid_
+		tick = 0
 		time = 0
-		player = player_
+		player_states[0] = player_
 		constraints = ConstraintSystem.new([], [])
-		portals = []
+		portals = {}
 
 	func ascii() -> String:
 		var res := grid.ascii()
+		var player = player()
 		for y in range(grid.height):
 			for x in range(grid.width):
 				var c = " "
@@ -306,10 +310,15 @@ class SolutionQuery:
 
 	static func new_from(other:SolutionQuery):
 		### duplicate other, but be smart and don't deep-copy the immutable grid
-		var me = SolutionQuery.new(other.grid, other.player.duplicate())
+		var me = SolutionQuery.new(other.grid, null)
+		me.tick = other.tick
 		me.time = other.time
-		me.portals = [] + other.portals
+		me.player_states = other.player_states.duplicate()
+		me.portals = other.portals.duplicate()
 		return me
+		
+	func add_portal(p: Portal):
+		self.portals[p] = null
 		
 	func is_terminated():
 		var det = _determination()
@@ -324,23 +333,42 @@ class SolutionQuery:
 	func is_win():
 		return _determination() == Determination.WIN
 	
+	func player():
+		return player_states[tick]
+	
 	func _tile():
+		var player = player()
 		return grid.at(player.x, player.y)
 	
-	func _check_portal() -> Portal:
-		### If the player encounters a portal, REMOVE IT, and yield it
+	func _check_enter_portal() -> Portal:
+		### If the player encounters an unused portal, associate it with a time
+		### entered, and yield it
+		var player = player()
 		for p in portals:
-			if p.x == player.x and p.y == player.y:
-				portals.erase(p)
+			if p.x == player.x and p.y == player.y and portals[p] == null:
+				portals[p] = tick
 				return p
 		return null
+		
+	func portal_at_tick(tick:int) -> Portal:
+		### If a portal was entered at this tick, yield it
+		for p in portals:
+			if portals[p] == tick:
+				return p
+		return null
+		
+	func player_at_tick(tick:int) -> Player:
+		return player_states[tick]
 	
 	func advance() -> Array: # of SolutionQuery
 		### Advance a tick and return all possible branches
+		var player = player_states[tick].duplicate()
+		tick += 1
 		time += 1
+		player_states[tick] = player
 		player.step()
 		
-		var portal = _check_portal()
+		var portal = _check_enter_portal()
 		if portal != null:
 			time += portal.time_delta
 		
@@ -359,14 +387,14 @@ class SolutionQuery:
 			for constraint in reaction.new_constraints:
 				new_constraints.append_constraint(constraint)
 			if reaction.reverse_direction:
-				self.player.direction = 1 - self.player.direction
+				player.direction = 1 - player.direction
 			
 			var new_query = SolutionQuery.new_from(self)
 			new_query.constraints = new_constraints
 			new_queries.append(new_query)
 		return new_queries
 	
-	static func drive_sols(queries: Array) -> SolutionQuery:
+	static func drive_sols(queries: Array) -> Solution:
 		### Drive all provided forks, and reduce to the best solution
 		var sols = []
 		for q in queries:
@@ -383,16 +411,16 @@ class SolutionQuery:
 				continue
 			if sol.is_win() and not best_sol.is_win():
 				best_sol = sol
-			if sol.time < best_sol.time:
-				best_sol = sol  # TODO: should be ELAPSED time.
+			if sol.num_frames() < best_sol.num_frames():
+				best_sol = sol
 		return best_sol
 		
-	func drive() -> SolutionQuery:
+	func drive() -> Solution:
 		print(ascii())
 		### drive to completion, returning the "best" solution
 		if is_terminated():
 			if is_consistent():
-				return self
+				return Solution.new(self)
 			return null
 		# Advance once, then drive all the forks to completion
 		return SolutionQuery.drive_sols(self.advance())
@@ -407,37 +435,44 @@ class SolutionQuery:
 				self.constraints.append_fact(Statement.new( \
 					tile, StatementValue.new(default_state), MIN_TIME))
 		
-#	func drive_from_start() -> SolutionQuery:
-#		# need to consider ALL COMBINATIONS of constraints
-#		# we end up with len(constraint_sets) for each solution query.
-#		var constraint_sets = [];
-#		for row in grid.grid:
-#			for tile in row:
-#				var states = tile.possible_states()
-#				if states == [null]:
-#					continue
-#				var these_constraints = []
-#				for state in states:
-#					these_constraints.append(Statement.new(tile, state, 0))
-#				constraint_sets.append(these_constraints)
-#
-#		# Now consider all combinations of constraints
-#		var constraint_systems = [ConstraintSystem.new([], [])]
-#		for set in constraint_sets:
-#			var new_constraint_systems = []
-#			for variant in set:
-#				for sys in constraint_systems:
-#					var new_sys = sys.duplicate()
-#					new_sys.append_constraint(variant)
-#					new_constraint_systems.append(new_sys)
-#			constraint_systems = new_constraint_systems
-#
-#		var queries = []
-#		for sys in constraint_systems:
-#			var query = SolutionQuery.new(grid, player.duplicate());
-#			query.constraints = sys
-#			queries.append(query)
-#		return drive_sols(queries)
+class Solution:
+	### A Solution provides a set of operations which can be used to render the
+	### state of the world at any specific FRAME
+	### It takes the one timeline provided by the SolutionQuery, and splits it
+	### into parallel timelines ready to be displayed
+	var query:SolutionQuery  # The SolutionQuery which this Solution is based on
+	var earliest_time:int  # Used if a player wraps before t=0
+	var latest_time:int
+	var player_states:Dictionary # int (time, ABSOLUTE) to [Player]
+	func _init(query_:SolutionQuery):
+		# build a map from `time` to player state
+		query = query_
+		earliest_time = 0
+		latest_time = 0
+		player_states = {}
+		var time = 0
+
+		for tick in range(query_.tick + 1):
+			var states_at_this_time = player_states.get(time, [])
+			states_at_this_time.append(query_.player_at_tick(tick))
+			var portal = query_.portal_at_tick(tick)
+			if portal != null:
+				time += portal.time_delta
+			time += 1
+			earliest_time = min(time, earliest_time)
+			latest_time = max(time, latest_time)
+			
+	func num_frames() -> int:
+		return latest_time - earliest_time + 1
+		
+	func is_win() -> bool:
+		return query.is_win()
+			
+	func player_states_at_frame(frame:int) -> Array: # of Player
+		return player_states.get(frame + earliest_time, [])
+	
+	func tile_state_at_frame(frame:int, tile:Tile):
+		return query.constraints.value_at(frame + earliest_time, tile)
 
 static func query_from_ascii(level:String, connections:Array, portals:Array):
 	var grid = Grid.new(level.length(), 1)
@@ -480,6 +515,6 @@ static func query_from_ascii(level:String, connections:Array, portals:Array):
 	for idx in range(level.length()):
 		var c = level[idx]
 		if c == "@":
-			query.portals.append(Portal.new(idx, 0, portals[portal_idx]))
+			query.add_portal(Portal.new(idx, 0, portals[portal_idx]))
 			portal_idx += 1
 	return query

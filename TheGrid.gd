@@ -16,7 +16,7 @@ func _ready():
 	var sol = query.drive()
 	print(sol)
 	var rowIdx := 0
-	for row in sol.grid.grid:
+	for row in sol.query.grid.grid:
 		var cellIdx := 0
 		for tile in row:
 			var tile_node:Node2D = tile_scene.instance()
@@ -26,7 +26,7 @@ func _ready():
 			self.add_child(tile_node)
 			cellIdx += 1
 		rowIdx += 1
-	for portal in sol.portals:
+	for portal in sol.query.portals:
 		var tile_node:Node2D = tile_scene.instance()
 		tile_node.get_children()[0].animation = "portal"
 		tile_node.position.x = portal.x * 50
@@ -35,8 +35,8 @@ func _ready():
 
 	var tile_node:Node2D = tile_scene.instance()
 	tile_node.get_children()[0].animation = "noodly-alive"
-	tile_node.position.x = sol.player.x * 50
-	tile_node.position.y = sol.player.y * 50
+	tile_node.position.x = sol.query.player().x * 50
+	tile_node.position.y = sol.query.player().y * 50
 	self.add_child(tile_node)
 	
 
