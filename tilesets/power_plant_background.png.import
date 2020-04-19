@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/power_plant_background.png-98a66b94e7b52b1723bd5f3b0994e8f1.stex"
+path="res://.import/power_plant_background.png-58a2aa2a2c715ceeafaab16d5c11edb0.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tilesets/power_plant_background.png"
-dest_files=[ "res://.import/power_plant_background.png-98a66b94e7b52b1723bd5f3b0994e8f1.stex" ]
+source_file="res://tilesets/power_plant_background.png"
+dest_files=[ "res://.import/power_plant_background.png-58a2aa2a2c715ceeafaab16d5c11edb0.stex" ]
 
 [params]
 
