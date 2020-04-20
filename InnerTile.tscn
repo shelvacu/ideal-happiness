@@ -60,4 +60,4 @@ animations = [ {
 position = Vector2( 25, 25 )
 scale = Vector2( 0.1, 0.1 )
 frames = SubResource( 1 )
-animation = "empty"
+animation = "portal"

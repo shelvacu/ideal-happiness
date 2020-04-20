@@ -46,6 +46,8 @@ func _ready():
 var last_frame = -1
 var player_tick_to_nodes := {}
 onready var tween = $Tween
+enum Mode {Edit, Play}
+var current_mode = Mode.Edit
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta:float):
 	time_elapsed += delta
@@ -53,17 +55,8 @@ func _process(delta:float):
 	if frame == last_frame: return
 	last_frame = frame
 
-	print(" ")
 	var new_player_tick_to_nodes := {}
 	for player in sol.player_states_at_frame(frame):
-		print(
-			"player tick " + 
-			String(player.tick) + 
-			" at " + 
-			String(player.x) + 
-			"," + 
-			String(player.y)
-		)
 		var player_node:Node2D = player_tick_to_nodes.get(player.tick - 1)
 		if player_node != null:
 			tween.interpolate_property(player_node, "position",
@@ -76,9 +69,13 @@ func _process(delta:float):
 			player_node.get_children()[0].animation = "noodly-alive"
 			var x = player.x * 50
 			var y = player.y * 50
+			var to = Transform2D(Vector2(1, 0), Vector2(0, 1), Vector2(x,y))
+			#var to = Transform2D.IDENTITY.translated(Vector2(x,y))
+			#var from = to.translated(Vector2(25,25)).rotated((30/360)*TAU)
+			#var from = to.translated(Vector2(25,25)).scaled(Vector2(0,0))
+			var from = Transform2D(Vector2(0,0), Vector2(0,0), Vector2(x+25,y+25))
 			tween.interpolate_property(player_node, "transform",
-				Transform2D(Vector2(0, 0), Vector2(0, 0), Vector2(x+25,y+25)), 
-				Transform2D(Vector2(1, 0), Vector2(0, 1), Vector2(x,y)),
+				from, to,
 				ANIM_TIME, Tween.TRANS_CUBIC, Tween.EASE_IN_OUT
 			)
 			self.add_child(player_node)
