@@ -174,6 +174,8 @@ func _ready():
 	
 	$SimulationPlayButton.connect("play_pressed", self, "start_simulation")
 	$SimulationPlayButton.connect("pause_pressed", self, "pause_simulation")
+	$SimulationStopButton.connect("stop_pressed", self, "stop_simulation")
+	connect("post_simulation_end", $SimulationPlayButton, "set_play")
 	
 	# Demo query: Change [-2] (portal time delta) to [-1], and game will lose
 	#var query = PuzzleLogic.query_from_ascii(".p  |@n  F.", [0], [-2])
@@ -210,11 +212,14 @@ func _ready():
 		portal_tile.position.x = xy[0] * 50
 		portal_tile.position.y = xy[1] * 50
 		self.add_child(portal_tile)
+		
+	sol = grid.solve()
+	render_frame(-1)
 
 var prev_frame = -1
 var player_tick_to_nodes := {}
 onready var tween = $Tween
-enum Mode {Edit, Play}
+enum Mode {Edit, Play, Pause}
 var current_mode = Mode.Edit
 var play_start := 0
 
@@ -225,14 +230,19 @@ func update_tile_icons(frame:int):
 		emit_signal("any_variable_changed", vari, variable_values[vari])
 
 func start_simulation():
-	emit_signal("pre_simulation_start")
-	sol = grid.solve()
+	if current_mode == Mode.Edit:
+		emit_signal("pre_simulation_start")
+		sol = grid.solve()
+		time_elapsed = 0
+		render_frame(0)
 	current_mode = Mode.Play
-	time_elapsed = 0
-	update_tile_icons(0)
 	
 func pause_simulation():
+	current_mode = Mode.Pause
+	
+func stop_simulation():
 	current_mode = Mode.Edit
+	render_frame(-1)
 	emit_signal("post_simulation_end")
 
 func _process(delta:float):
@@ -246,8 +256,10 @@ func play_process(delta:float):
 	if frame == prev_frame: return
 	prev_frame = frame
 	
+	render_frame(frame)
+
+func render_frame(frame:int):
 	update_tile_icons(frame)
-	
 	var new_player_tick_to_nodes := {}
 	for player in sol.solution.player_states_at_frame(frame):
 		var player_node:Node2D = player_tick_to_nodes.get(player.tick - 1)

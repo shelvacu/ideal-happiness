@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=2]
+[gd_scene load_steps=4 format=2]
 
 [ext_resource path="res://TheGrid.gd" type="Script" id=1]
 [ext_resource path="res://SimulationPlayButton.tscn" type="PackedScene" id=2]
+[ext_resource path="res://SimulationStopButton.tscn" type="PackedScene" id=3]
 
 [node name="TheGrid" type="Node2D"]
 position = Vector2( 50, 50 )
@@ -14,5 +15,11 @@ margin_left = 24.075
 margin_top = 415.043
 margin_right = 24.075
 margin_bottom = 415.043
+
+[node name="SimulationStopButton" parent="." instance=ExtResource( 3 )]
+margin_left = 78.3817
+margin_top = 414.519
+margin_right = 78.3817
+margin_bottom = 414.519
 
 [node name="Tween" type="Tween" parent="."]
