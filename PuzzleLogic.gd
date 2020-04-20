@@ -59,12 +59,6 @@ class GoalTile:
 		self.win_var = win_var_
 	func on_enter(time:int) -> Array:
 		return [Statement.new(win_var, StatementValue.new(WinState.WIN), time)] 
-		
-class EdgeTile:
-	### Placed at the edge of the level to prevent OOB accesses.
-	extends LinearTile
-	var tile_name = "empty"  # XXX colin: should be 'edge', maybe
-	var ascii = "."
 
 class EmptyTile:
 	extends LinearTile
