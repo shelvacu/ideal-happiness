@@ -99,7 +99,7 @@ class ElevatorNode:
 	### with that elevator_var is a pointer to whichever ElevatorNode houses
 	### the elevator.
 	extends LinearNode
-	var node_name = "bridge-nofall"  # TODO colin
+	var node_name = "goal"  # TODO colin
 	var ascii = "+"
 	var elevator_var:Variable
 	var linked:Array # of ElevatorNode
@@ -246,23 +246,26 @@ class ConstraintSystem:
 	
 	func append_constraint(constraint: Constraint):
 		constraints.append(constraint)
-	
-	func value_at(time:int, variable:Variable): # -> opaque
-		### Evaluate the facts about this Variable up through the provided time
-		var state = null
+		
+	func values_at(time:int) -> Dictionary:
+		var states = {}
 		for fact in facts:
 			if fact.time > time:
 				break
-			if fact.variable != variable:
-				continue
 			if fact.operation is StatementValue:
-				state = fact.operation.value
+				states[fact.variable] = fact.operation.value
 			elif fact.operation is StatementToggle:
-				assert(state == 0 or state == 1)
-				state = 1 - state
+				var cur_state = states[fact.variable]
+				assert(cur_state == 0 or cur_state == 1)
+				states[fact.variable] = 1 - cur_state
 			else:
 				assert(false) # Unknown StatementOperation!
-		return state
+				
+		return states
+	
+	func value_at(time:int, variable:Variable): # -> opaque
+		### Evaluate the facts about this Variable up through the provided time
+		return values_at(time)[variable]
 	func is_consistent() -> bool:
 		for c in constraints: 
 			var value = value_at(c.time, c.variable) 
@@ -453,3 +456,6 @@ class Solution:
 	
 	func state_at_frame(frame:int, variable:Variable):
 		return query.constraints.value_at(frame + earliest_time, variable)
+		
+	func all_states_at_frame(frame:int) -> Dictionary:
+		return query.constraints.values_at(frame + earliest_time)
