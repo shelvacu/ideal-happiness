@@ -97,8 +97,6 @@ static func query_from_ascii(level:String, connections:Array, portals:Array) -> 
 				facts.append(PuzzleLogic.Statement.var_defaults_to(bridge_var, bridge_state))
 			"F":
 				tile = PuzzleLogic.GoalTile.new(win_var)
-			".":
-				tile = PuzzleLogic.EdgeTile.new()
 		if tile != null:
 			grid.insert(idx, 0, tile)
 	
@@ -129,7 +127,7 @@ func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	sol = query_from_ascii(".p |@n n@- F.", [0,1], [-2,-3])
+	sol = query_from_ascii("p |@n n@- F", [0,1], [-2,-3])
 	
 	# Demo query: Change [-2] (portal time delta) to [-1], and game will lose
 	#var query = PuzzleLogic.query_from_ascii(".p  |@n  F.", [0], [-2])
