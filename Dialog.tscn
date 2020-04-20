@@ -22,30 +22,30 @@ font_data = ExtResource( 2 )
 size = 21
 font_data = ExtResource( 3 )
 
-[sub_resource type="AtlasTexture" id=7]
-flags = 4
-atlas = ExtResource( 5 )
-region = Rect2( 240, 0, 240, 240 )
-
-[sub_resource type="AtlasTexture" id=8]
+[sub_resource type="AtlasTexture" id=5]
 flags = 4
 atlas = ExtResource( 5 )
 region = Rect2( 0, 0, 240, 240 )
 
-[sub_resource type="SpriteFrames" id=5]
+[sub_resource type="AtlasTexture" id=6]
+flags = 4
+atlas = ExtResource( 5 )
+region = Rect2( 240, 0, 240, 240 )
+
+[sub_resource type="SpriteFrames" id=7]
 animations = [ {
-"frames": [ SubResource( 7 ) ],
-"loop": true,
-"name": "robot",
-"speed": 5.0
-}, {
-"frames": [ SubResource( 8 ) ],
+"frames": [ SubResource( 5 ) ],
 "loop": true,
 "name": "trish",
 "speed": 5.0
+}, {
+"frames": [ SubResource( 6 ) ],
+"loop": true,
+"name": "robot",
+"speed": 5.0
 } ]
 
-[sub_resource type="DynamicFont" id=6]
+[sub_resource type="DynamicFont" id=8]
 size = 24
 font_data = ExtResource( 3 )
 
@@ -85,8 +85,8 @@ __meta__ = {
 [node name="CharacterAvatar" type="AnimatedSprite" parent="."]
 position = Vector2( 162.15, 628.837 )
 scale = Vector2( 0.363, 0.363 )
-frames = SubResource( 5 )
-animation = "trish"
+frames = SubResource( 7 )
+animation = "robot"
 
 [node name="Polygon2D3" type="Polygon2D" parent="."]
 position = Vector2( 105.287, 6.22205 )
@@ -98,7 +98,7 @@ margin_left = 200.965
 margin_top = 670.327
 margin_right = 266.965
 margin_bottom = 700.327
-custom_fonts/font = SubResource( 6 )
+custom_fonts/font = SubResource( 8 )
 text = "Robot"
 __meta__ = {
 "_edit_use_anchors_": false

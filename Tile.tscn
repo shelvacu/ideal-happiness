@@ -8,6 +8,7 @@ extents = Vector2( 25, 25 )
 [node name="Tile" type="Node2D"]
 
 [node name="AnimatedSprite" parent="." instance=ExtResource( 1 )]
+animation = "button-pressed"
 
 [node name="ClickableArea" type="Area2D" parent="."]
 
