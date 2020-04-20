@@ -2,7 +2,7 @@ extends Object
 
 # We won't allow solutions which have the actor travel past these time bounds
 const MIN_TIME = -10
-const MAX_TIME = 20
+const MAX_TIME = 15
 
 enum Direction { LEFT, RIGHT }
 enum WinState { UNKNOWN, WIN }
@@ -14,10 +14,14 @@ class Variable:
 class Branch:
 	var new_direction:int  # from Direction enum
 	var new_tile:Tile
+	var constraints:Array # of Constraint
+	var new_facts:Array # of Statement
 	
-	func _init(new_tile_:Tile, new_direction_:int):
+	func _init(new_tile_:Tile, new_direction_:int, constraints_:Array=[], new_facts_:Array=[]):
 		new_direction = new_direction_
 		new_tile = new_tile_
+		constraints = constraints_
+		new_facts = new_facts_
 	
 class Tile:
 	func constraints_to_enter(_time:int) -> Array: # of Constraint
@@ -28,7 +32,7 @@ class Tile:
 		### Return whatever new facts we know by having the robot occupy this
 		### tile at this time.
 		return []
-	func on_exit(_player_direction:int) -> Array: # of Branch
+	func on_exit(_time:int, _player_direction:int) -> Array: # of Branch
 		### Return all possible branches that a robot could take to leave this
 		### tile. If empty, that terminates the simulation (i.e. the robot just
 		### idles here indefinitely)
@@ -43,7 +47,7 @@ class LinearTile:
 	func _init(left_tile_:Tile=null, right_tile_:Tile=null):
 		left_tile = left_tile_
 		right_tile = right_tile_
-	func on_exit(player_direction:int) -> Array:
+	func on_exit(_time:int, player_direction:int) -> Array:
 		if player_direction == Direction.RIGHT and right_tile != null:
 			return [Branch.new(right_tile, Direction.RIGHT)]
 		if player_direction == Direction.LEFT and left_tile != null:
@@ -87,6 +91,34 @@ class BridgeTile:
 		bridge_var = bridge_var_
 	func constraints_to_enter(time:int) -> Array:
 		 return [Constraint.new(self.bridge_var, BridgeState.SOLID, time)] 
+		
+class ElevatorTile:
+	### Represents the elevator "receptacle", for lack of a better word.
+	### An elevator which travels between two floors will have two ElevatorTiles.
+	### These two tiles will share the same elevator_var. The state associated
+	### with that elevator_var is a pointer to whichever ElevatorTile houses
+	### the elevator.
+	extends LinearTile
+	var tile_name = "bridge-nofall"  # TODO colin
+	var ascii = "+"
+	var elevator_var:Variable
+	var linked:Array # of ElevatorTile
+	func _init(elevator_var_:Variable):
+		elevator_var = elevator_var_
+		linked = []
+	func add_links(links:Array): # of Elevator
+		linked += links
+	func on_exit(time:int, player_direction:int) -> Array: # of Branch
+		# We can either go left or right,
+		# OR, if the elevator is on this tile, then we can go to another
+		# ElevatorTile
+		var adjacent_branches := .on_exit(time, player_direction)
+		var constraint = Constraint.new(elevator_var, self, time)
+		var traveling_branches := []
+		for tile in linked:
+			var fact = Statement.new(elevator_var, StatementValue.new(self), time+1)
+			traveling_branches.append(Branch.new(tile, player_direction, [constraint], [fact]))
+		return adjacent_branches + traveling_branches
 
 class Player:
 	var direction:int = Direction.RIGHT
@@ -118,7 +150,10 @@ class StatementValue:
 	func _init(value_):
 		self.value = value_
 	func ascii() -> String:
-		return String(value)
+		if value is Object:
+			return String(value.get_instance_id())
+		else:
+			return String(value)
 
 class StatementToggle:
 	### Statement.operation option for `x = !x`
@@ -173,7 +208,9 @@ class Constraint:
 		
 	func ascii() -> String:
 		var v = "null"
-		if value != null:
+		if value is Object:
+			v = String(value.get_instance_id())
+		elif value != null:
 			v = String(value)
 		return String(variable.get_instance_id()) + "=" + v + "@" + String(time)
 		
@@ -318,11 +355,17 @@ class SolutionQuery:
 		
 		# add forks for every branch we _could_ fork into
 		var new_queries := []
-		for branch in _tile().on_exit(player().direction):
+		for branch in _tile().on_exit(time, player().direction):
 			var new_query = self.duplicate()
 			new_query.tick += 1
 			new_query.time += 1
 			new_query.player_states[tick+1] = Player.new(branch.new_tile, branch.new_direction, new_query.tick)
+			
+			for constraint in branch.constraints:
+				new_query.constraints.append_constraint(constraint)
+				
+			for fact in branch.new_facts:
+				new_query.constraints.append_fact(fact)
 			
 			for constraint in branch.new_tile.constraints_to_enter(time):
 				new_query.constraints.append_constraint(constraint)

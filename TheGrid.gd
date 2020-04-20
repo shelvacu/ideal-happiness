@@ -65,59 +65,78 @@ class SolvedGrid:
 		grid = grid_
 		solution = solution_ 
 
-static func query_from_ascii(level:String, connections:Array, portals:Array) -> SolvedGrid:
-	var grid := Grid.new(level.length(), 1)
+static func query_from_ascii(level:String, connections:Array, portal_times:Array) -> SolvedGrid:
+	var grid := Grid.new(20, 5)
+	
+	# Pre-generate some bridge vars to simplify code
 	var bridge_vars := []
+	for i in range(10):
+		bridge_vars.append(PuzzleLogic.Variable.new())
 	var bridge_tiles := []
+	var btn_idx := 0
+	
+	var elevator_var := PuzzleLogic.Variable.new()
+	var elevator_tiles := []
+	
+	var portals := []
+	
+	var win_var := PuzzleLogic.Variable.new()
+	
 	var player_x := 0
 	var player_y := 0
 	var facts := []
-	var win_var := PuzzleLogic.Variable.new()
-	for idx in range(level.length()):
-		var c = level[idx]
+	var tile_x = -1
+	var tile_y = 0
+	for c in level:
+		tile_x += 1
 		var tile = null
 		match c:
 			"p":
-				player_x = idx
+				player_x = tile_x
+				player_y = tile_y
 			" ":
 				pass
 			"|":
-				var bridge_var := PuzzleLogic.Variable.new()
+				var bridge_var = bridge_vars[bridge_tiles.size()]
 				var bridge_state = PuzzleLogic.BridgeState.NOT_SOLID
 				tile = PuzzleLogic.BridgeTile.new(bridge_var)
 				bridge_tiles.append(tile)
-				bridge_vars.append(bridge_var)
 				facts.append(PuzzleLogic.Statement.var_defaults_to(bridge_var, bridge_state))
 			"-":
-				var bridge_var := PuzzleLogic.Variable.new()
+				var bridge_var = bridge_vars[bridge_tiles.size()]
 				var bridge_state = PuzzleLogic.BridgeState.SOLID
 				tile = PuzzleLogic.BridgeTile.new(bridge_var)
 				bridge_tiles.append(tile)
-				bridge_vars.append(bridge_var)
 				facts.append(PuzzleLogic.Statement.var_defaults_to(bridge_var, bridge_state))
+			"n":
+				tile = PuzzleLogic.ButtonTile.new(bridge_vars[connections[btn_idx]])
+				btn_idx += 1
 			"F":
 				tile = PuzzleLogic.GoalTile.new(win_var)
+			"@":
+				var idx = portals.size()
+				portals.append(PuzzleLogic.Portal.new(grid.at(tile_x, tile_y), portal_times[idx]))
+			"E":
+				tile = PuzzleLogic.ElevatorTile.new(elevator_var)
+				elevator_tiles.append(tile)
+			"\n":
+				tile_y += 1
+				tile_x = 0
 		if tile != null:
-			grid.insert(idx, 0, tile)
-	
-	var btn_idx := 0
-	for idx in range(level.length()):
-		var c = level[idx]
-		if c == "n":
-			var tile = PuzzleLogic.ButtonTile.new(bridge_vars[connections[btn_idx]])
-			grid.insert(idx, 0, tile)
-			btn_idx += 1
+			grid.insert(tile_x, tile_y, tile)
+			
+	if elevator_tiles != []:
+		for e in elevator_tiles:
+			e.add_links(elevator_tiles)
+		# Elevator starts at the FIRST provided location
+		facts.append(PuzzleLogic.Statement.var_defaults_to(elevator_var, elevator_tiles[0]))
 	grid.link()  ## DON'T MUTATE GRID AFTER THIS
 	
 	var player := PuzzleLogic.Player.new(grid.at(player_x, player_y), PuzzleLogic.Direction.RIGHT)
 	var query := PuzzleLogic.SolutionQuery.new_from_facts(player, win_var, facts)
 
-	var portal_idx := 0
-	for idx in range(level.length()):
-		var c = level[idx]
-		if c == "@":
-			query.add_portal(PuzzleLogic.Portal.new(grid.at(idx, 0), portals[portal_idx]))
-			portal_idx += 1
+	for portal in portals:
+		query.add_portal(portal)
 	var solved := query.drive()
 	return SolvedGrid.new(grid, solved)
 
@@ -127,7 +146,7 @@ func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	sol = query_from_ascii("p |@n n@- F", [0,1], [-2,-3])
+	sol = query_from_ascii("p |@n n@- E\n         \n         E F", [0,1], [-2,-3])
 	
 	# Demo query: Change [-2] (portal time delta) to [-1], and game will lose
 	#var query = PuzzleLogic.query_from_ascii(".p  |@n  F.", [0], [-2])
