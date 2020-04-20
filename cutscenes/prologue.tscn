@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=2]
+[gd_scene load_steps=18 format=2]
 
 [ext_resource path="res://backgrounds/forest.png" type="Texture" id=1]
 [ext_resource path="res://entities/asteroid.tscn" type="PackedScene" id=2]
@@ -6,6 +6,58 @@
 [ext_resource path="res://Dialog.tscn" type="PackedScene" id=4]
 [ext_resource path="res://entities/trish.tscn" type="PackedScene" id=5]
 [ext_resource path="res://entities/robot.tscn" type="PackedScene" id=6]
+[ext_resource path="res://entities/portal.png" type="Texture" id=7]
+[ext_resource path="res://entities/blueprint.png" type="Texture" id=8]
+[ext_resource path="res://entities/time_machine.png" type="Texture" id=9]
+
+[sub_resource type="AtlasTexture" id=1]
+flags = 4
+atlas = ExtResource( 7 )
+region = Rect2( 0, 0, 80, 80 )
+
+[sub_resource type="AtlasTexture" id=2]
+flags = 4
+atlas = ExtResource( 7 )
+region = Rect2( 80, 0, 80, 80 )
+
+[sub_resource type="AtlasTexture" id=3]
+flags = 4
+atlas = ExtResource( 7 )
+region = Rect2( 160, 0, 80, 80 )
+
+[sub_resource type="SpriteFrames" id=4]
+animations = [ {
+"frames": [ SubResource( 1 ), SubResource( 2 ), SubResource( 3 ) ],
+"loop": true,
+"name": "default",
+"speed": 5.0
+} ]
+
+[sub_resource type="AtlasTexture" id=5]
+flags = 4
+atlas = ExtResource( 9 )
+region = Rect2( 0, 0, 80, 80 )
+
+[sub_resource type="AtlasTexture" id=6]
+flags = 4
+atlas = ExtResource( 9 )
+region = Rect2( 80, 0, 80, 80 )
+
+[sub_resource type="SpriteFrames" id=7]
+animations = [ {
+"frames": [ SubResource( 5 ), SubResource( 6 ) ],
+"loop": true,
+"name": "default",
+"speed": 5.0
+} ]
+
+[sub_resource type="SpriteFrames" id=8]
+animations = [ {
+"frames": [ ExtResource( 8 ) ],
+"loop": true,
+"name": "default",
+"speed": 5.0
+} ]
 
 [node name="Prologue" type="Node2D"]
 script = ExtResource( 3 )
@@ -25,3 +77,22 @@ position = Vector2( 704, 440 )
 [node name="Robot" parent="." instance=ExtResource( 6 )]
 position = Vector2( 576, 440 )
 flip_h = true
+
+[node name="Portal" type="AnimatedSprite" parent="."]
+visible = false
+position = Vector2( 634.094, 433.522 )
+frames = SubResource( 4 )
+frame = 1
+playing = true
+
+[node name="TimeMachine" type="AnimatedSprite" parent="."]
+visible = false
+position = Vector2( 663.491, 440.724 )
+frames = SubResource( 7 )
+frame = 1
+playing = true
+
+[node name="Blueprint" type="AnimatedSprite" parent="."]
+visible = false
+position = Vector2( 622.72, 439.248 )
+frames = SubResource( 8 )

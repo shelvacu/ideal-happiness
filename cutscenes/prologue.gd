@@ -64,20 +64,32 @@ onready var messages := [
 	MessageEvent.new("robot", "*Acquiescent beeping*"),
 	MessageEvent.new("trish", "It was good knowing you too, Robot."),
 	ShowHide.new($Dialog, false),
-	#TODO: other events
+	ShowHide.new($Portal, true),
+	Combined.new([
+		ShowHide.new($TimeMachine, true),
+		ShowHide.new($Blueprint, true)
+	]),
 	Combined.new([
 		MessageEvent.new("trish", "What's this!?"),
 		ShowHide.new($Dialog, true)
 	]),
 	MessageEvent.new("robot", "*Suspicious beeping*"),
-	#trish walks to props
-	MessageEvent.new("trish", "It appears to be a handheld time machine and blueprints for an anti-matter bomb that will completely destroy the asteroid!"),
+	ShowHide.new($Dialog, false),
+	ShowHide.new($Blueprint, false),
+	ShowHide.new($TimeMachine, false),
+	Combined.new([
+		MessageEvent.new("trish", "It appears to be a handheld time machine and blueprints for an anti-matter bomb that will completely destroy the asteroid!"),
+		ShowHide.new($Dialog, true)
+	]),
 	MessageEvent.new("robot", "*Excited beeping*"),
 	MessageEvent.new("trish", "Quick, Robot. We need to go acquire: Nuclear Control Rod, Annihilium, Anti-Matter, and Deus Ex Mechanism."),
 	MessageEvent.new("robot", "*Exhortative beeping*"),
 	MessageEvent.new("trish", "Ah, you are right. We should probably travel back a few years to buy some time."),
-	#exit through portal
-	ChangeScene.new("res://TheGrid.tscn")
+	Combined.new([
+		ShowHide.new($Trish, false),
+		ShowHide.new($Robot, false)
+	]),
+	ChangeScene.new("res://cutscenes/title.tscn")
 ]
 
 var text_idx := -1
