@@ -8,6 +8,7 @@ const PuzzleLogic = preload("PuzzleLogic.gd")
 const STEP_TIME := 0.2
 const ANIM_TIME := 0.18
 
+var grid:Grid
 var sol:SolvedGrid
 # time, in seconds, since the start of the scene
 var time_elapsed:float = 0.0
@@ -15,7 +16,8 @@ var time_elapsed:float = 0.0
 var player_nodes:Array = []
 
 func empty_input(viewport:Node, event:InputEvent, shape_idx:int, x:int, y:int):
-	print(String(x) + "," + String(y) + " " + event.as_text())
+	pass
+	# print(String(x) + "," + String(y) + " " + event.as_text())
 
 class Grid:
 	var grid := [] # of GameNode
@@ -156,7 +158,7 @@ func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	sol = grid_from_ascii(level_ascii, [0,1], [-2,-3]).solve()
+	grid = grid_from_ascii(level_ascii, [0,1], [-2,-3])
 	
 	$SimulationPlayButton.connect("play_pressed", self, "start_simulation")
 	$SimulationPlayButton.connect("pause_pressed", self, "pause_simulation")
@@ -166,7 +168,7 @@ func _ready():
 	
 	print(sol)
 	var rowIdx := 0
-	for row in sol.grid.grid:
+	for row in grid.grid:
 		var cellIdx := 0
 		for tile in row:
 			var tile_node:Node2D = tile_scene.instance()
@@ -180,11 +182,12 @@ func _ready():
 			self.add_child(tile_node)
 			cellIdx += 1
 		rowIdx += 1
-	for portal in sol.solution.query.portals:
+	for portal in grid.portals:
 		var portal_tile = portal_scene.instance()
 		portal_tile.set_time_delta(portal.time_delta)
+		portal_tile.connect("on_time_delta_changed", portal, "set_time_delta")
 		
-		var xy = sol.grid.find(portal.node)
+		var xy = grid.find(portal.node)
 		portal_tile.position.x = xy[0] * 50
 		portal_tile.position.y = xy[1] * 50
 		self.add_child(portal_tile)
@@ -197,6 +200,7 @@ var current_mode = Mode.Edit
 var play_start := 0
 
 func start_simulation():
+	sol = grid.solve()
 	current_mode = Mode.Play
 	time_elapsed = 0
 	

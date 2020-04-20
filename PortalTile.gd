@@ -1,10 +1,21 @@
 extends Node2D
 
+signal on_time_delta_changed
+
 var time_delta:int
+var can_edit:bool = true
 
 var is_editing:bool = false
 var clicked_y:int = 0
 var time_delta_at_click:int = 0
+
+func enable_edit():
+	can_edit = true
+	
+func disable_edit():
+	if is_editing:
+		end_edit()
+	can_edit = false
 
 func set_time_delta(time_delta_:int):
 	time_delta = time_delta_
@@ -14,6 +25,7 @@ func set_time_delta(time_delta_:int):
 	else:
 		text = "+" + String(time_delta)
 	find_node("Label").text = text
+	emit_signal("on_time_delta_changed", time_delta)
 	
 func clickable_input(viewport:Node, event:InputEvent, shape_idx:int):
 	if event.get("pressed") and not event.get("doubleclick") and event.get("button_index") == BUTTON_LEFT:

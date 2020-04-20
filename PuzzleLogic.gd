@@ -143,6 +143,9 @@ class Portal:
 	func _init(node_:GameNode, time_delta_:int):
 		node = node_
 		time_delta = time_delta_
+		
+	func set_time_delta(time_delta_:int):
+		time_delta = time_delta_
 
 class StatementValue:
 	### Statement.operation option for `x = <value>` where `x` is a state
