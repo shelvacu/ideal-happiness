@@ -39,7 +39,7 @@ class EdgeTile:
 	extends Tile
 	var tile_name = "empty"  # XXX colin: should be 'edge', maybe
 	var ascii = "."
-	func react(time:int) -> Reaction:
+	func react(_time:int) -> Reaction:
 		var reaction = Reaction.new()
 		reaction.reverse_direction = true
 		return reaction
@@ -88,17 +88,20 @@ class Player:
 	var direction:int = Direction.RIGHT
 	var x:int = 0
 	var y:int = 0
+	var tick:int = 0
 	func step():
 		if direction == Direction.LEFT:
 			x -= 1
 		if direction == Direction.RIGHT:
 			x += 1
+		tick += 1
 	
 	func duplicate():
 		var c = Player.new()
 		c.direction = direction
 		c.x = x
 		c.y = y
+		c.tick = tick
 		return c
 		
 class Portal:
@@ -350,15 +353,15 @@ class SolutionQuery:
 				return p
 		return null
 		
-	func portal_at_tick(tick:int) -> Portal:
+	func portal_at_tick(at_tick:int) -> Portal:
 		### If a portal was entered at this tick, yield it
 		for p in portals:
-			if portals[p] == tick:
+			if portals[p] == at_tick:
 				return p
 		return null
 		
-	func player_at_tick(tick:int) -> Player:
-		return player_states[tick]
+	func player_at_tick(at_tick:int) -> Player:
+		return player_states[at_tick]
 	
 	func advance() -> Array: # of SolutionQuery
 		### Advance a tick and return all possible branches
