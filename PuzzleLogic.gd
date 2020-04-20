@@ -407,7 +407,7 @@ class SolutionQuery:
 		return best_sol
 		
 	func drive() -> Solution:
-		print(ascii())
+		#print(ascii())
 		### drive to completion, returning the "best" solution
 		if is_terminated():
 			if is_consistent():

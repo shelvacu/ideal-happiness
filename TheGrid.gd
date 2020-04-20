@@ -15,8 +15,8 @@ onready var portal_scene = preload("res://PortalTile.tscn")
 const PuzzleLogic = preload("PuzzleLogic.gd")
 
 # How many seconds to spend on each frame of the solution.
-const STEP_TIME := 0.2
-const ANIM_TIME := 0.18
+const STEP_TIME := 0.6
+const ANIM_TIME := STEP_TIME * 0.9
 
 var grid:Grid
 var sol:SolvedGrid

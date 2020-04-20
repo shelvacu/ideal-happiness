@@ -30,6 +30,26 @@ class ChangeScene:
 		path = path_
 	func do(thing:Node):
 		thing.get_tree().change_scene(path)
+class ShowHide:
+	extends StoryEvent
+	var to_hide:CanvasItem
+	var visibility:bool
+	func _init(thing_:CanvasItem, visibility_:bool):
+		to_hide = thing_
+		visibility = visibility_
+	func do(thing:Node):
+		if visibility:
+			to_hide.show()
+		else:
+			to_hide.hide()
+class Combined:
+	extends StoryEvent
+	var events:Array
+	func _init(events_:Array):
+		events = events_
+	func do(thing:Node):
+		for ev in events:
+			ev.do(thing)
 onready var messages := [
 	MessageEvent.new("trish", "Hopeless! There's no way we can stop this asteroid from striking Earth!"),
 	MessageEvent.new("robot", "*Inquisitive beeping*"),
@@ -43,8 +63,12 @@ onready var messages := [
 	MessageEvent.new("trish", "Impact in fifteen minutes."),
 	MessageEvent.new("robot", "*Acquiescent beeping*"),
 	MessageEvent.new("trish", "It was good knowing you too, Robot."),
+	ShowHide.new($Dialog, false),
 	#TODO: other events
-	MessageEvent.new("trish", "What's this!?"),
+	Combined.new([
+		MessageEvent.new("trish", "What's this!?"),
+		ShowHide.new($Dialog, true)
+	]),
 	MessageEvent.new("robot", "*Suspicious beeping*"),
 	#trish walks to props
 	MessageEvent.new("trish", "It appears to be a handheld time machine and blueprints for an anti-matter bomb that will completely destroy the asteroid!"),
