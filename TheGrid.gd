@@ -141,7 +141,12 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 				tile = PuzzleLogic.GoalNode.new(grid.win_var)
 			"@":
 				var idx = grid.portals.size()
-				grid.portals.append(PuzzleLogic.Portal.new(grid.at(tile_x, tile_y), portal_times[idx]))
+				var portal_time:int
+				if portal_times.size() > idx:
+					portal_time = portal_times[idx]
+				else:
+					portal_time = 0
+				grid.portals.append(PuzzleLogic.Portal.new(grid.at(tile_x, tile_y), portal_time))
 			"E":
 				tile = PuzzleLogic.ElevatorNode.new(elevator_var)
 				elevator_tiles.append(tile)
@@ -160,17 +165,23 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 	
 	return grid
 
-var level_ascii = """
+var levels_ascii = [["""
 p@|@n@n@-@E@@
 .............
-..........E@F"""
+..........E@F""",[0,1],[]],["""
+p@|@n@@|@n@@F
+""",[0,1],[]]
+]
+
+var curr_level = 0
+
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	grid = grid_from_ascii(level_ascii, [0,1], [0, -2, 0, -3, 0, 0, 0, 0])
+	grid = grid_from_ascii(levels_ascii[curr_level][0], levels_ascii[curr_level][1], levels_ascii[curr_level][2])
 	
 	$SimulationPlayButton.connect("play_pressed", self, "start_simulation")
 	$SimulationPlayButton.connect("pause_pressed", self, "pause_simulation")
