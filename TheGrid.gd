@@ -310,6 +310,9 @@ func _on_NextLevelArea_input_event(viewport, event, shape_idx):
 	if event is InputEventMouseButton and event.pressed and event.button_index == BUTTON_LEFT:
 		stop_simulation()
 		curr_level += 1
+		if curr_level >= levels_ascii.size():
+			$NextLevel/Label.text = "You beat the last level, congrats!"
+			return
 		for c in $TileContainer.get_children():
 			$TileContainer.remove_child(c)
 		$NextLevel.hide()
