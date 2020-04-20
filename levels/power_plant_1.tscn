@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=2]
 
-[ext_resource path="res://tilesets/power_plant_foreground.tres" type="TileSet" id=1]
+[ext_resource path="res://tilesets/power_plant.tres" type="TileSet" id=1]
 [ext_resource path="res://backgrounds/power_plant.png" type="Texture" id=3]
 
 [node name="Node2D" type="Node2D"]
