@@ -109,10 +109,9 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 	var elevator_var := PuzzleLogic.Variable.new()
 	var elevator_tiles := []
 	
-	var tile_x = -1
+	var tile_x = 0
 	var tile_y = 0
 	for c in level:
-		tile_x += 1
 		var tile = null
 		match c:
 			"p":
@@ -147,9 +146,11 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 				elevator_tiles.append(tile)
 			"\n":
 				tile_y += 1
-				tile_x = 0
+				tile_x = -1
+				
 		if tile != null:
 			grid.insert(tile_x, tile_y, tile)
+		tile_x += 1
 			
 	if elevator_tiles != []:
 		for e in elevator_tiles:
