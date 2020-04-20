@@ -177,17 +177,13 @@ func _ready():
 			cellIdx += 1
 		rowIdx += 1
 	for portal in sol.solution.query.portals:
-		var tile_node:Node2D = portal_scene.instance()
-		var text:String
-		if portal.time_delta < 0:
-			text = String(portal.time_delta)
-		else:
-			text = "+" + String(portal.time_delta)
-		tile_node.find_node("Label").text = text
+		var portal_tile = portal_scene.instance()
+		portal_tile.set_time_delta(portal.time_delta)
+		
 		var xy = sol.grid.find(portal.node)
-		tile_node.position.x = xy[0] * 50
-		tile_node.position.y = xy[1] * 50
-		self.add_child(tile_node)
+		portal_tile.position.x = xy[0] * 50
+		portal_tile.position.y = xy[1] * 50
+		self.add_child(portal_tile)
 
 var prev_frame = -1
 var player_tick_to_nodes := {}

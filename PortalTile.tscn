@@ -1,15 +1,18 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://Tile.tscn" type="PackedScene" id=1]
 [ext_resource path="res://aileron/Aileron-Black.otf" type="DynamicFontData" id=2]
+[ext_resource path="res://PortalTile.gd" type="Script" id=3]
 
 [sub_resource type="DynamicFont" id=1]
 size = 22
 font_data = ExtResource( 2 )
 
 [node name="PortalTile" type="Node2D"]
+script = ExtResource( 3 )
 
 [node name="Tile" parent="." instance=ExtResource( 1 )]
+script = ExtResource( 3 )
 
 [node name="Label" type="Label" parent="."]
 margin_left = 0.407814
