@@ -161,16 +161,16 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 	return grid
 
 var level_ascii = """
-p@|@n@n@-@E@@
-.............
-..........E@F"""
+p@@|@@n@@n@@-@@E@@
+..................
+...............E@F"""
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	grid = grid_from_ascii(level_ascii, [0,1], [0, -2, 0, -3, 0, 0, 0, 0])
+	grid = grid_from_ascii(level_ascii, [0,1], [0, 0, -3, 0, 0, 0, -6, 0, 0, 0, 0, 0, 0])
 	
 	$SimulationPlayButton.connect("play_pressed", self, "start_simulation")
 	$SimulationPlayButton.connect("pause_pressed", self, "pause_simulation")
@@ -218,11 +218,18 @@ enum Mode {Edit, Play}
 var current_mode = Mode.Edit
 var play_start := 0
 
+func update_tile_icons(frame:int):
+	# Let all the tiles know their new states
+	var variable_values = sol.solution.all_states_at_frame(frame)
+	for vari in variable_values:
+		emit_signal("any_variable_changed", vari, variable_values[vari])
+
 func start_simulation():
 	emit_signal("pre_simulation_start")
 	sol = grid.solve()
 	current_mode = Mode.Play
 	time_elapsed = 0
+	update_tile_icons(0)
 	
 func pause_simulation():
 	current_mode = Mode.Edit
@@ -238,11 +245,8 @@ func play_process(delta:float):
 	if frame >= sol.solution.end_frame(): return
 	if frame == prev_frame: return
 	prev_frame = frame
-
-	# Let all the tiles know their new states
-	var variable_values = sol.solution.all_states_at_frame(frame)
-	for vari in variable_values:
-		emit_signal("any_variable_changed", vari, variable_values[vari])
+	
+	update_tile_icons(frame)
 	
 	var new_player_tick_to_nodes := {}
 	for player in sol.solution.player_states_at_frame(frame):
