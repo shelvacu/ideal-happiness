@@ -4,8 +4,10 @@
 [ext_resource path="res://entities/asteroid.tscn" type="PackedScene" id=2]
 [ext_resource path="res://Dialog.tscn" type="PackedScene" id=3]
 [ext_resource path="res://entities/trish.tscn" type="PackedScene" id=4]
+[ext_resource path="res://cutscenes/prologue.gd" type="Script" id=5]
 
-[node name="Node2D" type="Node2D"]
+[node name="Prologue" type="Node2D"]
+script = ExtResource( 5 )
 
 [node name="Background" type="Sprite" parent="."]
 texture = ExtResource( 1 )
@@ -13,7 +15,6 @@ centered = false
 
 [node name="Asteroid" parent="." instance=ExtResource( 2 )]
 position = Vector2( 640, 120 )
-frame = 1
 
 [node name="Node2D" parent="." instance=ExtResource( 3 )]
 
