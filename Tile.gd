@@ -1,5 +1,8 @@
 extends Node2D
 
+# For things like Bridges, set this to e.g. 1 if you want the tile rendered
+# at an offset from its "real position"
+var visual_offset_y:int = 0
 
 func set_icon(icon:String):
 	$AnimatedSprite.animation = icon

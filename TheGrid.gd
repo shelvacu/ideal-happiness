@@ -194,7 +194,7 @@ func show_level():
 				tile_node = tile_scene.instance()
 				tile_node.get_children()[0].animation = tile.node_name
 			tile_node.position.x = cellIdx * 50
-			tile_node.position.y = rowIdx * 50
+			tile_node.position.y = (rowIdx + tile_node.visual_offset_y) * 50
 			if tile.node_name == "empty":
 				var area = tile_node.find_node("ClickableArea", true, false)
 				area.connect("input_event", self, 

@@ -1,5 +1,8 @@
 extends Node2D
 
+# See Tile.gd
+var visual_offset_y:int = 1
+
 func on_state_change(changed_var, new_state, expected_var):
 	if expected_var != changed_var:
 		return
