@@ -19,12 +19,14 @@ func disable_edit():
 
 func set_time_delta(time_delta_:int):
 	time_delta = time_delta_
+	$AnimatedSprite.visible = time_delta != 0
+	$Label.visible = time_delta != 0
 	var text:String
 	if time_delta < 0:
 		text = String(time_delta)
 	else:
 		text = "+" + String(time_delta)
-	find_node("Label").text = text
+	$Label.text = text
 	emit_signal("on_time_delta_changed", time_delta)
 	
 func clickable_input(viewport:Node, event:InputEvent, shape_idx:int):
@@ -67,8 +69,7 @@ func _input(event:InputEvent):
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	var area = find_node("ClickableArea", true, false)
-	area.connect("input_event", self, "clickable_input")
+	$ClickableArea.connect("input_event", self, "clickable_input")
 	pass # Replace with function body.
 
 
