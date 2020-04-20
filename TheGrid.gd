@@ -5,7 +5,11 @@ extends Node2D
 # etc.
 signal pre_simulation_start
 signal post_simulation_end
+# Emitted with the Variable, and its state, whenever we calculate a value for a
+# variable
+signal any_variable_changed
 
+onready var bridge_scene = preload("res://BridgeTile.tscn")
 onready var tile_scene = preload("res://Tile.tscn")
 onready var portal_scene = preload("res://PortalTile.tscn")
 const PuzzleLogic = preload("PuzzleLogic.gd")
@@ -179,8 +183,13 @@ func _ready():
 	for row in grid.grid:
 		var cellIdx := 0
 		for tile in row:
-			var tile_node:Node2D = tile_scene.instance()
-			tile_node.get_children()[0].animation = tile.node_name
+			var tile_node
+			if tile.node_name == "bridge-nofall":
+				tile_node = bridge_scene.instance()
+				connect("any_variable_changed", tile_node, "on_state_change", [tile.bridge_var])
+			else:
+				tile_node = tile_scene.instance()
+				tile_node.get_children()[0].animation = tile.node_name
 			tile_node.position.x = cellIdx * 50
 			tile_node.position.y = rowIdx * 50
 			if tile.node_name == "empty":
@@ -230,6 +239,11 @@ func play_process(delta:float):
 	if frame == prev_frame: return
 	prev_frame = frame
 
+	# Let all the tiles know their new states
+	var variable_values = sol.solution.all_states_at_frame(frame)
+	for vari in variable_values:
+		emit_signal("any_variable_changed", vari, variable_values[vari])
+	
 	var new_player_tick_to_nodes := {}
 	for player in sol.solution.player_states_at_frame(frame):
 		var player_node:Node2D = player_tick_to_nodes.get(player.tick - 1)
