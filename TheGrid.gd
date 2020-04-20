@@ -1,5 +1,11 @@
 extends Node2D
 
+# These aren't really intended to be public, but they give us a good way to
+# re-enable edit mode, and to have the button images update when the sim ends,
+# etc.
+signal pre_simulation_start
+signal post_simulation_end
+
 onready var tile_scene = preload("res://Tile.tscn")
 onready var portal_scene = preload("res://PortalTile.tscn")
 const PuzzleLogic = preload("PuzzleLogic.gd")
@@ -186,6 +192,8 @@ func _ready():
 		var portal_tile = portal_scene.instance()
 		portal_tile.set_time_delta(portal.time_delta)
 		portal_tile.connect("on_time_delta_changed", portal, "set_time_delta")
+		connect("pre_simulation_start", portal_tile, "disable_edit")
+		connect("post_simulation_end", portal_tile, "enable_edit")
 		
 		var xy = grid.find(portal.node)
 		portal_tile.position.x = xy[0] * 50
@@ -200,12 +208,14 @@ var current_mode = Mode.Edit
 var play_start := 0
 
 func start_simulation():
+	emit_signal("pre_simulation_start")
 	sol = grid.solve()
 	current_mode = Mode.Play
 	time_elapsed = 0
 	
 func pause_simulation():
 	current_mode = Mode.Edit
+	emit_signal("post_simulation_end")
 
 func _process(delta:float):
 	if current_mode == Mode.Play:

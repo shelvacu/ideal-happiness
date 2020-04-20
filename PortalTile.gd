@@ -28,6 +28,8 @@ func set_time_delta(time_delta_:int):
 	emit_signal("on_time_delta_changed", time_delta)
 	
 func clickable_input(viewport:Node, event:InputEvent, shape_idx:int):
+	if not can_edit:
+		return
 	if event.get("pressed") and not event.get("doubleclick") and event.get("button_index") == BUTTON_LEFT:
 		start_edit(event.position)
 		
