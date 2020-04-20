@@ -179,11 +179,11 @@ func _process(delta:float):
 		else:
 			player_node = tile_scene.instance()
 			player_node.get_children()[0].animation = "noodly-alive"
-			var to = Transform2D(Vector2(1, 0), Vector2(0, 1), Vector2(x,y))
+			var to = Transform2D(Vector2(1, 0), Vector2(0, 1), Vector2(x*50,y*50))
 			#var to = Transform2D.IDENTITY.translated(Vector2(x,y))
 			#var from = to.translated(Vector2(25,25)).rotated((30/360)*TAU)
 			#var from = to.translated(Vector2(25,25)).scaled(Vector2(0,0))
-			var from = Transform2D(Vector2(0,0), Vector2(0,0), Vector2(x+25,y+25))
+			var from = Transform2D(Vector2(0,0), Vector2(0,0), Vector2(x*50+25,y*50+25))
 			tween.interpolate_property(player_node, "transform",
 				from, to,
 				ANIM_TIME, Tween.TRANS_CUBIC, Tween.EASE_IN_OUT
