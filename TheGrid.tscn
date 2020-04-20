@@ -7,7 +7,7 @@
 position = Vector2( 50, 50 )
 script = ExtResource( 1 )
 
-[node name="Control" parent="." instance=ExtResource( 2 )]
+[node name="SimulationPlayButton" parent="." instance=ExtResource( 2 )]
 anchor_right = 0.0
 anchor_bottom = 0.0
 margin_left = 24.075

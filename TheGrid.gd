@@ -157,6 +157,9 @@ func _ready():
 	#P |||@n@n@nF
 	sol = query_from_ascii(level_ascii, [0,1], [-2,-3])
 	
+	$SimulationPlayButton.connect("play_pressed", self, "start_simulation")
+	$SimulationPlayButton.connect("pause_pressed", self, "pause_simulation")
+	
 	# Demo query: Change [-2] (portal time delta) to [-1], and game will lose
 	#var query = PuzzleLogic.query_from_ascii(".p  |@n  F.", [0], [-2])
 	
@@ -191,6 +194,13 @@ onready var tween = $Tween
 enum Mode {Edit, Play}
 var current_mode = Mode.Edit
 var play_start := 0
+
+func start_simulation():
+	current_mode = Mode.Play
+	time_elapsed = 0
+	
+func pause_simulation():
+	current_mode = Mode.Edit
 
 func _process(delta:float):
 	if current_mode == Mode.Play:

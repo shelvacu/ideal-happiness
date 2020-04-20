@@ -3,18 +3,24 @@ extends Control
 enum Graphic { Play, Pause }
 var cur_graphic:int = Graphic.Play
 
+# Emitted when the game ought to Play, and Pause, respectively
+signal play_pressed
+signal pause_pressed
+
 func toggle():
 	match cur_graphic:
 		Graphic.Play:
-			start_play()
+			set_pause()
+			emit_signal("play_pressed")
 		Graphic.Pause:
-			end_play()
+			set_play()
+			emit_signal("pause_pressed")
 			
-func start_play():
+func set_pause():
 	cur_graphic = Graphic.Pause
 	get_children()[0].animation = "pause"
 	
-func end_play():
+func set_play():
 	cur_graphic = Graphic.Play
 	get_children()[0].animation = "play"
 
