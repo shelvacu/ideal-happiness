@@ -18,31 +18,31 @@ func empty_input(viewport:Node, event:InputEvent, shape_idx:int, x:int, y:int):
 	print(String(x) + "," + String(y) + " " + event.as_text())
 
 class Grid:
-	var grid := [] # of Tile
+	var grid := [] # of GameNode
 	var width:int
 	var height:int
 	func _init(width_: int, height_: int):
-		### Initialize with Empty Tiles
+		### Initialize with Empty Nodes
 		width = width_
 		height = height_
 		for _a in range(height):
 			var row := []
 			for _b in range(width):
-				row.append(PuzzleLogic.EmptyTile.new())
+				row.append(PuzzleLogic.EmptyNode.new())
 			grid.append(row)
 	func link():
 		### Link adjacent tiles together
 		for y in range(height):
 			for x in range(width):
 				if x != 0:
-					at(x, y).left_tile = at(x-1, y)
-					at(x-1, y).right_tile = at(x, y)
+					at(x, y).left = at(x-1, y)
+					at(x-1, y).right = at(x, y)
 	func find(tile) -> Array: # of [x, y]
 		for y in range(height):
 			for x in range(width):
 				if at(x, y) == tile:
 					return [x, y]
-		assert(false)  # no such Tile!
+		assert(false)  # no such Node!
 		return []
 	func find_x(tile) -> int:
 		return find(tile)[0]
@@ -104,25 +104,25 @@ static func query_from_ascii(level:String, connections:Array, portal_times:Array
 			"|":
 				var bridge_var = bridge_vars[bridge_tiles.size()]
 				var bridge_state = PuzzleLogic.BridgeState.NOT_SOLID
-				tile = PuzzleLogic.BridgeTile.new(bridge_var)
+				tile = PuzzleLogic.BridgeNode.new(bridge_var)
 				bridge_tiles.append(tile)
 				facts.append(PuzzleLogic.Statement.var_defaults_to(bridge_var, bridge_state))
 			"-":
 				var bridge_var = bridge_vars[bridge_tiles.size()]
 				var bridge_state = PuzzleLogic.BridgeState.SOLID
-				tile = PuzzleLogic.BridgeTile.new(bridge_var)
+				tile = PuzzleLogic.BridgeNode.new(bridge_var)
 				bridge_tiles.append(tile)
 				facts.append(PuzzleLogic.Statement.var_defaults_to(bridge_var, bridge_state))
 			"n":
-				tile = PuzzleLogic.ButtonTile.new(bridge_vars[connections[btn_idx]])
+				tile = PuzzleLogic.ButtonNode.new(bridge_vars[connections[btn_idx]])
 				btn_idx += 1
 			"F":
-				tile = PuzzleLogic.GoalTile.new(win_var)
+				tile = PuzzleLogic.GoalNode.new(win_var)
 			"@":
 				var idx = portals.size()
 				portals.append(PuzzleLogic.Portal.new(grid.at(tile_x, tile_y), portal_times[idx]))
 			"E":
-				tile = PuzzleLogic.ElevatorTile.new(elevator_var)
+				tile = PuzzleLogic.ElevatorNode.new(elevator_var)
 				elevator_tiles.append(tile)
 			"\n":
 				tile_y += 1
@@ -166,10 +166,10 @@ func _ready():
 		var cellIdx := 0
 		for tile in row:
 			var tile_node:Node2D = tile_scene.instance()
-			tile_node.get_children()[0].animation = tile.tile_name
+			tile_node.get_children()[0].animation = tile.node_name
 			tile_node.position.x = cellIdx * 50
 			tile_node.position.y = rowIdx * 50
-			if tile.tile_name == "empty":
+			if tile.node_name == "empty":
 				var area = tile_node.find_node("ClickableArea", true, false)
 				area.connect("input_event", self, 
 					"empty_input", [cellIdx, rowIdx])
@@ -184,7 +184,7 @@ func _ready():
 		else:
 			text = "+" + String(portal.time_delta)
 		tile_node.find_node("Label").text = text
-		var xy = sol.grid.find(portal.tile)
+		var xy = sol.grid.find(portal.node)
 		tile_node.position.x = xy[0] * 50
 		tile_node.position.y = xy[1] * 50
 		self.add_child(tile_node)
@@ -203,14 +203,14 @@ func _process(delta:float):
 func play_process(delta:float):
 	time_elapsed += delta
 	var frame = int(time_elapsed / STEP_TIME)
-	if frame >= sol.latest_time: return
+	if frame >= sol.solution.end_frame(): return
 	if frame == prev_frame: return
 	prev_frame = frame
 
 	var new_player_tick_to_nodes := {}
 	for player in sol.solution.player_states_at_frame(frame):
 		var player_node:Node2D = player_tick_to_nodes.get(player.tick - 1)
-		var xy := sol.grid.find(player.tile)
+		var xy := sol.grid.find(player.node)
 		var x = xy[0]
 		var y = xy[1]
 		if player_node != null:

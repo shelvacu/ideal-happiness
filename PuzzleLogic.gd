@@ -13,50 +13,50 @@ class Variable:
 	
 class Branch:
 	var new_direction:int  # from Direction enum
-	var new_tile:Tile
+	var new_node:GameNode
 	var constraints:Array # of Constraint
 	var new_facts:Array # of Statement
 	
-	func _init(new_tile_:Tile, new_direction_:int, constraints_:Array=[], new_facts_:Array=[]):
+	func _init(new_node_:GameNode, new_direction_:int, constraints_:Array=[], new_facts_:Array=[]):
 		new_direction = new_direction_
-		new_tile = new_tile_
+		new_node = new_node_
 		constraints = constraints_
 		new_facts = new_facts_
 	
-class Tile:
+class GameNode:
 	func constraints_to_enter(_time:int) -> Array: # of Constraint
 		### Return whatever things must be satisfied for the robot to be allowed
-		### onto this tile at the given time
+		### onto this node at the given time
 		return []
 	func on_enter(_time:int) -> Array: # of Statement
 		### Return whatever new facts we know by having the robot occupy this
-		### tile at this time.
+		### node at this time.
 		return []
 	func on_exit(_time:int, _player_direction:int) -> Array: # of Branch
 		### Return all possible branches that a robot could take to leave this
-		### tile. If empty, that terminates the simulation (i.e. the robot just
+		### node. If empty, that terminates the simulation (i.e. the robot just
 		### idles here indefinitely)
 		assert(false)
 		return []
 		
-class LinearTile:
-	 ### Tile which has a Left and/or a Right tile adjacent to it
-	extends Tile
-	var left_tile:Tile # or null, if at the edge of the map
-	var right_tile:Tile # or null, if at the edge of the map
-	func _init(left_tile_:Tile=null, right_tile_:Tile=null):
-		left_tile = left_tile_
-		right_tile = right_tile_
+class LinearNode:
+	 ### Node which has a Left and/or a Right node adjacent to it
+	extends GameNode
+	var left:GameNode # or null, if at the edge of the map
+	var right:GameNode # or null, if at the edge of the map
+	func _init(left_:GameNode=null, right_:GameNode=null):
+		left = left_
+		right = right_
 	func on_exit(_time:int, player_direction:int) -> Array:
-		if player_direction == Direction.RIGHT and right_tile != null:
-			return [Branch.new(right_tile, Direction.RIGHT)]
-		if player_direction == Direction.LEFT and left_tile != null:
-			return [Branch.new(left_tile, Direction.RIGHT)]
+		if player_direction == Direction.RIGHT and right != null:
+			return [Branch.new(right, Direction.RIGHT)]
+		if player_direction == Direction.LEFT and left != null:
+			return [Branch.new(left, Direction.RIGHT)]
 		return [] 
 		
-class GoalTile:
-	extends LinearTile
-	var tile_name = "goal"
+class GoalNode:
+	extends LinearNode
+	var node_name = "goal"
 	var ascii = "F"
 	var win_var:Variable
 	func _init(win_var_:Variable):
@@ -64,14 +64,14 @@ class GoalTile:
 	func on_enter(time:int) -> Array:
 		return [Statement.new(win_var, StatementValue.new(WinState.WIN), time)] 
 
-class EmptyTile:
-	extends LinearTile
-	var tile_name = "empty"
+class EmptyNode:
+	extends LinearNode
+	var node_name = "empty"
 	var ascii = " "
 
-class ButtonTile:
-	extends LinearTile
-	var tile_name = "button-depressed"
+class ButtonNode:
+	extends LinearNode
+	var node_name = "button-depressed"
 	var ascii = "n"
 	var attached:Variable
 	func _init(attached_:Variable):
@@ -82,9 +82,9 @@ class ButtonTile:
 		return [Statement.new(attached, StatementToggle.new(), time)]
 
 enum BridgeState { NOT_SOLID, SOLID };
-class BridgeTile:
-	extends LinearTile
-	var tile_name = "bridge-nofall"
+class BridgeNode:
+	extends LinearNode
+	var node_name = "bridge-nofall"
 	var ascii = "|"
 	var bridge_var:Variable
 	func _init(bridge_var_:Variable):
@@ -92,41 +92,41 @@ class BridgeTile:
 	func constraints_to_enter(time:int) -> Array:
 		 return [Constraint.new(self.bridge_var, BridgeState.SOLID, time)] 
 		
-class ElevatorTile:
+class ElevatorNode:
 	### Represents the elevator "receptacle", for lack of a better word.
-	### An elevator which travels between two floors will have two ElevatorTiles.
-	### These two tiles will share the same elevator_var. The state associated
-	### with that elevator_var is a pointer to whichever ElevatorTile houses
+	### An elevator which travels between two floors will have two ElevatorNodes.
+	### These two nodes will share the same elevator_var. The state associated
+	### with that elevator_var is a pointer to whichever ElevatorNode houses
 	### the elevator.
-	extends LinearTile
-	var tile_name = "bridge-nofall"  # TODO colin
+	extends LinearNode
+	var node_name = "bridge-nofall"  # TODO colin
 	var ascii = "+"
 	var elevator_var:Variable
-	var linked:Array # of ElevatorTile
+	var linked:Array # of ElevatorNode
 	func _init(elevator_var_:Variable):
 		elevator_var = elevator_var_
 		linked = []
-	func add_links(links:Array): # of Elevator
+	func add_links(links:Array): # of ElevatorNode
 		linked += links
 	func on_exit(time:int, player_direction:int) -> Array: # of Branch
 		# We can either go left or right,
-		# OR, if the elevator is on this tile, then we can go to another
-		# ElevatorTile
+		# OR, if the elevator is on this node, then we can go to another
+		# ElevatorNode
 		var adjacent_branches := .on_exit(time, player_direction)
 		var constraint = Constraint.new(elevator_var, self, time)
 		var traveling_branches := []
-		for tile in linked:
+		for node in linked:
 			var fact = Statement.new(elevator_var, StatementValue.new(self), time+1)
-			traveling_branches.append(Branch.new(tile, player_direction, [constraint], [fact]))
+			traveling_branches.append(Branch.new(node, player_direction, [constraint], [fact]))
 		return adjacent_branches + traveling_branches
 
 class Player:
 	var direction:int = Direction.RIGHT
-	var tile:Tile
+	var node:GameNode
 	var tick:int = 0
 	
-	func _init(tile_:Tile, direction_:int, tick_:int=0):
-		tile = tile_
+	func _init(node_:GameNode, direction_:int, tick_:int=0):
+		node = node_
 		direction = direction_
 		tick = tick_
 		
@@ -134,19 +134,19 @@ class Player:
 		tick += 1
 	
 	func duplicate():
-		return Player.new(tile, direction, tick)
+		return Player.new(node, direction, tick)
 		
 class Portal:
-	var tile:Tile
+	var node:GameNode
 	var time_delta:int # probably negative
 	var ascii = "@"
-	func _init(tile_:Tile, time_delta_:int):
-		tile = tile_
+	func _init(node_:GameNode, time_delta_:int):
+		node = node_
 		time_delta = time_delta_
 
 class StatementValue:
 	### Statement.operation option for `x = <value>` where `x` is a state
-	var value # Opaque. It comes from Tile.possible_states
+	var value # Opaque.
 	func _init(value_):
 		self.value = value_
 	func ascii() -> String:
@@ -161,10 +161,10 @@ class StatementToggle:
 		return "Toggle"
 
 class Statement:
-	### A statement claims that the "value" (state) of the provided tile is as
-	### provided, at the given time.
-	### We assume that between any two statements about a tile, its value doesn't
-	### change
+	### A statement claims that the "value" (state) of the provided variable is
+	### as provided, at the given time.
+	### We assume that between any two statements about a variable, its value
+	### doesn't change
 	var time:int
 	var variable:Variable
 	var operation # Either StatementValue or StatementMap
@@ -245,7 +245,7 @@ class ConstraintSystem:
 		constraints.append(constraint)
 	
 	func value_at(time:int, variable:Variable): # -> opaque
-		### Evaluate the facts about this tile up through the provided time
+		### Evaluate the facts about this Variable up through the provided time
 		var state = null
 		for fact in facts:
 			if fact.time > time:
@@ -325,15 +325,15 @@ class SolutionQuery:
 	func player() -> Player:
 		return player_states[tick]
 	
-	func _tile() -> Tile:
-		return player().tile
+	func _node() -> GameNode:
+		return player().node
 	
 	func _check_enter_portal() -> Portal:
 		### If the player encounters an unused portal, associate it with a time
 		### entered, and yield it
 		var player = player()
 		for p in portals:
-			if p.tile == player.tile and portals[p] == null:
+			if p.node == player.node and portals[p] == null:
 				portals[p] = tick
 				return p
 		return null
@@ -355,11 +355,11 @@ class SolutionQuery:
 		
 		# add forks for every branch we _could_ fork into
 		var new_queries := []
-		for branch in _tile().on_exit(time, player().direction):
+		for branch in _node().on_exit(time, player().direction):
 			var new_query = self.duplicate()
 			new_query.tick += 1
 			new_query.time += 1
-			new_query.player_states[tick+1] = Player.new(branch.new_tile, branch.new_direction, new_query.tick)
+			new_query.player_states[tick+1] = Player.new(branch.new_node, branch.new_direction, new_query.tick)
 			
 			for constraint in branch.constraints:
 				new_query.constraints.append_constraint(constraint)
@@ -367,10 +367,10 @@ class SolutionQuery:
 			for fact in branch.new_facts:
 				new_query.constraints.append_fact(fact)
 			
-			for constraint in branch.new_tile.constraints_to_enter(time):
+			for constraint in branch.new_node.constraints_to_enter(time):
 				new_query.constraints.append_constraint(constraint)
 			
-			for fact in branch.new_tile.on_enter(time):
+			for fact in branch.new_node.on_enter(time):
 				new_query.constraints.append_fact(fact)
 			
 			new_queries.append(new_query)
@@ -393,7 +393,7 @@ class SolutionQuery:
 				continue
 			if sol.is_win() and not best_sol.is_win():
 				best_sol = sol
-			if sol.num_frames() < best_sol.num_frames():
+			if sol.end_frame() < best_sol.end_frame():
 				best_sol = sol
 		if best_sol == null and fallback.is_consistent():
 			# neither a win nor loss condition was met. We dead-ended.
@@ -438,8 +438,9 @@ class Solution:
 			earliest_time = min(time, earliest_time)
 			latest_time = max(time, latest_time)
 			
-	func num_frames() -> int:
-		return latest_time - earliest_time + 1
+	func end_frame() -> int:
+		### Return the index of the last frame of the solution (i.e. length - 1)
+		return latest_time - earliest_time
 		
 	func is_win() -> bool:
 		return query.is_win()
