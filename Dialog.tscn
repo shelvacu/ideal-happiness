@@ -1,0 +1,69 @@
+[gd_scene load_steps=11 format=2]
+
+[ext_resource path="res://aileron/Aileron-BoldItalic.otf" type="DynamicFontData" id=1]
+[ext_resource path="res://aileron/Aileron-Bold.otf" type="DynamicFontData" id=2]
+[ext_resource path="res://aileron/Aileron-Regular.otf" type="DynamicFontData" id=3]
+[ext_resource path="res://aileron/Aileron-Italic.otf" type="DynamicFontData" id=4]
+[ext_resource path="res://test-robot.png" type="Texture" id=5]
+
+[sub_resource type="DynamicFont" id=1]
+size = 21
+font_data = ExtResource( 1 )
+
+[sub_resource type="DynamicFont" id=2]
+size = 21
+font_data = ExtResource( 4 )
+
+[sub_resource type="DynamicFont" id=3]
+size = 21
+font_data = ExtResource( 2 )
+
+[sub_resource type="DynamicFont" id=4]
+size = 21
+font_data = ExtResource( 3 )
+
+[sub_resource type="SpriteFrames" id=5]
+animations = [ {
+"frames": [ ExtResource( 5 ) ],
+"loop": true,
+"name": "default",
+"speed": 5.0
+} ]
+
+[node name="DialogBox" type="Node2D"]
+
+[node name="Polygon2D" type="Polygon2D" parent="."]
+position = Vector2( -8.524, -79.618 )
+scale = Vector2( 1.016, 1.128 )
+color = Color( 0.411765, 0.27451, 0.0823529, 1 )
+antialiased = true
+polygon = PoolVector2Array( 118.278, 584.155, 67.9274, 672.268, 1249.91, 696.185, 1224.73, 561.497 )
+
+[node name="Polygon2D2" type="Polygon2D" parent="."]
+color = Color( 0, 0, 0, 1 )
+antialiased = true
+polygon = PoolVector2Array( 118.278, 584.155, 67.9274, 672.268, 1249.91, 696.185, 1224.73, 561.497 )
+
+[node name="DialogBoxText" type="RichTextLabel" parent="."]
+margin_left = 236.0
+margin_top = 590.0
+margin_right = 1218.0
+margin_bottom = 674.0
+custom_fonts/bold_italics_font = SubResource( 1 )
+custom_fonts/italics_font = SubResource( 2 )
+custom_fonts/bold_font = SubResource( 3 )
+custom_fonts/normal_font = SubResource( 4 )
+bbcode_enabled = true
+bbcode_text = "[center]your [i]mother[/i] was a hampster [b]and[/b] your [i]father[/i] smelt of elderberries![/center]
+[right]The missile knows where it is at all times. It knows this because it knows where it isn't. By subtracting where it is from where it isn't, or where it isn't from where it is, whichever is greater ..."
+text = "your mother was a hampster and your father smelt of elderberries!
+The missile knows where it is at all times. It knows this because it knows where it isn't. By subtracting where it is from where it isn't, or where it isn't from where it is, whichever is greater ..."
+scroll_active = false
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="AnimatedSprite" type="AnimatedSprite" parent="."]
+position = Vector2( 183.257, 628.758 )
+scale = Vector2( 0.175641, 0.175641 )
+frames = SubResource( 5 )
