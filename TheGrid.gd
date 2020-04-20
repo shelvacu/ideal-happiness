@@ -4,8 +4,8 @@ onready var tile_scene = preload("res://Tile.tscn")
 const PuzzleLogic = preload("PuzzleLogic.gd")
 
 # How many seconds to spend on each frame of the solution.
-const STEP_TIME:float = 1.0
-const ANIM_TIME:float = 0.9
+const STEP_TIME := 1.0
+const ANIM_TIME := 0.9
 
 var sol:PuzzleLogic.Solution
 # time, in seconds, since the start of the scene
@@ -80,7 +80,6 @@ func _process(delta:float):
 			)
 			self.add_child(player_node)
 		new_player_tick_to_nodes[player.tick] = player_node
-
 	for node in player_tick_to_nodes.values():
 		self.remove_child(node)
 	player_tick_to_nodes = new_player_tick_to_nodes

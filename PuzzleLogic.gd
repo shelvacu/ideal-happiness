@@ -353,15 +353,15 @@ class SolutionQuery:
 				return p
 		return null
 		
-	func portal_at_tick(at_tick:int) -> Portal:
+	func portal_at_tick(tick:int) -> Portal:
 		### If a portal was entered at this tick, yield it
 		for p in portals:
-			if portals[p] == at_tick:
+			if portals[p] == tick:
 				return p
 		return null
 		
-	func player_at_tick(at_tick:int) -> Player:
-		return player_states[at_tick]
+	func player_at_tick(tick:int) -> Player:
+		return player_states[tick]
 	
 	func advance() -> Array: # of SolutionQuery
 		### Advance a tick and return all possible branches
