@@ -83,21 +83,22 @@ __meta__ = {
 }
 
 [node name="CharacterAvatar" type="AnimatedSprite" parent="."]
-position = Vector2( 162.15, 628.837 )
-scale = Vector2( 0.363, 0.363 )
+position = Vector2( 169.562, 586.532 )
+scale = Vector2( 0.65, 0.65 )
 frames = SubResource( 7 )
 animation = "robot"
 
 [node name="Polygon2D3" type="Polygon2D" parent="."]
-position = Vector2( 105.287, 6.22205 )
+position = Vector2( 35.1441, -65.1827 )
+scale = Vector2( 1.09706, 1.09706 )
 color = Color( 0.231373, 0.188235, 0.141176, 1 )
 polygon = PoolVector2Array( 79.6925, 680.078, 88.0604, 664.731, 165.986, 664.731, 173.979, 680.496, 165.986, 694.877, 87.4916, 694.308 )
 
 [node name="CharacterName" type="Label" parent="."]
-margin_left = 200.965
-margin_top = 670.327
-margin_right = 266.965
-margin_bottom = 700.327
+margin_left = 143.133
+margin_top = 664.905
+margin_right = 209.133
+margin_bottom = 694.905
 custom_fonts/font = SubResource( 8 )
 text = "Robot"
 __meta__ = {
