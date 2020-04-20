@@ -4,7 +4,6 @@ enum Graphic { Play, Pause }
 var cur_graphic:int = Graphic.Play
 
 func toggle():
-	print("toggling play button")
 	match cur_graphic:
 		Graphic.Play:
 			start_play()
@@ -12,10 +11,12 @@ func toggle():
 			end_play()
 			
 func start_play():
-	pass
+	cur_graphic = Graphic.Pause
+	get_children()[0].animation = "pause"
 	
 func end_play():
-	pass
+	cur_graphic = Graphic.Play
+	get_children()[0].animation = "play"
 
 func _input(event:InputEvent):
 	if event is InputEventMouseButton and event.button_index == BUTTON_LEFT and event.pressed:
