@@ -25,10 +25,6 @@ var time_elapsed:float = 0.0
 # These are the players visible on screen. We add or remove them over time
 var player_nodes:Array = []
 
-func empty_input(viewport:Node, event:InputEvent, shape_idx:int, x:int, y:int):
-	pass
-	# print(String(x) + "," + String(y) + " " + event.as_text())
-
 class Grid:
 	var grid := [] # of GameNode
 	var width:int
@@ -197,8 +193,6 @@ func show_level():
 			tile_node.position.y = (rowIdx + tile_node.visual_offset_y) * 50
 			if tile.node_name == "empty":
 				var area = tile_node.find_node("ClickableArea", true, false)
-				area.connect("input_event", self, 
-					"empty_input", [cellIdx, rowIdx])
 			$TileContainer.add_child(tile_node)
 			cellIdx += 1
 		rowIdx += 1
