@@ -140,6 +140,10 @@ static func query_from_ascii(level:String, connections:Array, portal_times:Array
 	var solved := query.drive()
 	return SolvedGrid.new(grid, solved)
 
+var level_ascii = """
+p |@n n@- E
+		 
+		 E F"""
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
