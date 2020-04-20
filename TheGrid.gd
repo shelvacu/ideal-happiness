@@ -140,7 +140,12 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 				tile = PuzzleLogic.GoalNode.new(grid.win_var)
 			"@":
 				var idx = grid.portals.size()
-				grid.portals.append(PuzzleLogic.Portal.new(grid.at(tile_x, tile_y), portal_times[idx]))
+				var portal_time:int
+				if portal_times.size() > idx:
+					portal_time = portal_times[idx]
+				else:
+					portal_time = 0
+				grid.portals.append(PuzzleLogic.Portal.new(grid.at(tile_x, tile_y), portal_time))
 			"E":
 				tile = PuzzleLogic.ElevatorNode.new(elevator_var)
 				elevator_tiles.append(tile)
@@ -161,27 +166,22 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 	
 	return grid
 
-var level_ascii = """
+var levels_ascii = [["""
 p@@|@@n@@n@@-@@E@@
 ..................
-...............E@F"""
+...............E@F""",[0,1],[]],["""
+p@|@n@@|@n@@F
+""",[0,1],[]]
+]
 
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	print("_ready")
-	#012345678901234
-	#P |||@n@n@nF
-	grid = grid_from_ascii(level_ascii, [0,1], [0, 0, -3, 0, 0, 0, -6, 0, 0, 0, 0, 0, 0])
-	
-	$SimulationPlayButton.connect("play_pressed", self, "start_simulation")
-	$SimulationPlayButton.connect("pause_pressed", self, "pause_simulation")
-	$SimulationStopButton.connect("stop_pressed", self, "stop_simulation")
-	connect("post_simulation_end", $SimulationPlayButton, "set_play")
-	
+var curr_level = 0
+
+func show_level():
+	grid = grid_from_ascii(levels_ascii[curr_level][0], levels_ascii[curr_level][1], levels_ascii[curr_level][2])
 	# Demo query: Change [-2] (portal time delta) to [-1], and game will lose
 	#var query = PuzzleLogic.query_from_ascii(".p  |@n  F.", [0], [-2])
 	
-	print(sol)
+	#print(sol)
 	var rowIdx := 0
 	for row in grid.grid:
 		var cellIdx := 0
@@ -199,7 +199,7 @@ func _ready():
 				var area = tile_node.find_node("ClickableArea", true, false)
 				area.connect("input_event", self, 
 					"empty_input", [cellIdx, rowIdx])
-			self.add_child(tile_node)
+			$TileContainer.add_child(tile_node)
 			cellIdx += 1
 		rowIdx += 1
 	for portal in grid.portals:
@@ -212,10 +212,20 @@ func _ready():
 		var xy = grid.find(portal.node)
 		portal_tile.position.x = xy[0] * 50
 		portal_tile.position.y = xy[1] * 50
-		self.add_child(portal_tile)
+		$TileContainer.add_child(portal_tile)
 		
 	sol = grid.solve()
 	render_frame(-1)
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	print("_ready")
+	
+	$SimulationPlayButton.connect("play_pressed", self, "start_simulation")
+	$SimulationPlayButton.connect("pause_pressed", self, "pause_simulation")
+	$SimulationStopButton.connect("stop_pressed", self, "stop_simulation")
+	connect("post_simulation_end", $SimulationPlayButton, "set_play")
+	show_level()
 
 var prev_frame = -1
 var player_tick_to_nodes := {}
@@ -253,7 +263,10 @@ func _process(delta:float):
 func play_process(delta:float):
 	time_elapsed += delta
 	var frame = int(time_elapsed / STEP_TIME)
-	if frame >= sol.solution.end_frame(): return
+	if frame >= sol.solution.end_frame():
+		if sol.solution.is_win():
+			$NextLevel.show()
+		return
 	if frame == prev_frame: return
 	prev_frame = frame
 	
@@ -285,9 +298,19 @@ func render_frame(frame:int):
 				from, to,
 				ANIM_TIME, Tween.TRANS_CUBIC, Tween.EASE_IN_OUT
 			)
-			self.add_child(player_node)
+			$TileContainer.add_child(player_node)
 		new_player_tick_to_nodes[player.tick] = player_node
 	for node in player_tick_to_nodes.values():
-		self.remove_child(node)
+		$TileContainer.remove_child(node)
 	player_tick_to_nodes = new_player_tick_to_nodes
 	tween.start()
+
+
+func _on_NextLevelArea_input_event(viewport, event, shape_idx):
+	if event is InputEventMouseButton and event.pressed and event.button_index == BUTTON_LEFT:
+		stop_simulation()
+		curr_level += 1
+		for c in $TileContainer.get_children():
+			$TileContainer.remove_child(c)
+		$NextLevel.hide()
+		show_level()

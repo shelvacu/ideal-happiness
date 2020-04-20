@@ -1,8 +1,16 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=7 format=2]
 
 [ext_resource path="res://TheGrid.gd" type="Script" id=1]
 [ext_resource path="res://SimulationPlayButton.tscn" type="PackedScene" id=2]
 [ext_resource path="res://SimulationStopButton.tscn" type="PackedScene" id=3]
+[ext_resource path="res://aileron/Aileron-Black.otf" type="DynamicFontData" id=4]
+
+[sub_resource type="DynamicFont" id=1]
+size = 49
+font_data = ExtResource( 4 )
+
+[sub_resource type="RectangleShape2D" id=2]
+extents = Vector2( 506.81, 42.0965 )
 
 [node name="TheGrid" type="Node2D"]
 position = Vector2( 50, 50 )
@@ -23,3 +31,25 @@ margin_right = 78.3817
 margin_bottom = 414.519
 
 [node name="Tween" type="Tween" parent="."]
+
+[node name="NextLevel" type="Node2D" parent="."]
+visible = false
+position = Vector2( 153.251, 410.109 )
+
+[node name="Label" type="Label" parent="NextLevel"]
+margin_right = 996.0
+margin_bottom = 60.0
+custom_fonts/font = SubResource( 1 )
+text = "You did it! Click to go to the next level >>"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="NextLevelArea" type="Area2D" parent="NextLevel"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="NextLevel/NextLevelArea"]
+position = Vector2( 492.728, 31.3868 )
+shape = SubResource( 2 )
+
+[node name="TileContainer" type="Node2D" parent="."]
+[connection signal="input_event" from="NextLevel/NextLevelArea" to="." method="_on_NextLevelArea_input_event"]
