@@ -5,19 +5,62 @@ extends Node2D
 # var a = 2
 # var b = "text"
 
-const Messages := [
-	"This is a thing",
-	"This is another thing",
-	"I'm saying so much stuff",
-	"I mean look at all this stuff I'm saying",
-	"I can even say things\non multiple lines!"
+class StoryEvent:
+	func do(thing:Node):
+		pass
+
+class MessageEvent:
+	extends StoryEvent
+	var name:String
+	var text:String
+	func _init(name_:String, text_:String):
+		name = name_
+		text = text_
+	func do(thing:Node):
+		var textbox:RichTextLabel = thing.find_node("DialogBoxText", true, false)
+		textbox.text = text
+		var av:AnimatedSprite = thing.find_node("CharacterAvatar", true, false)
+		av.animation = name
+		var namebox:Label = thing.find_node("CharacterName", true, false)
+		namebox.text = name.capitalize()
+class ChangeScene:
+	extends StoryEvent
+	var path:String
+	func _init(path_:String):
+		path = path_
+	func do(thing:Node):
+		thing.get_tree().change_scene(path)
+onready var messages := [
+	MessageEvent.new("trish", "Hopeless! There's no way we can stop this asteroid from striking Earth!"),
+	MessageEvent.new("robot", "*Inquisitive beeping*"),
+	MessageEvent.new("trish", "No, Robot, a nuclear explosion would just shatter it."),
+	MessageEvent.new("trish", "Without a way to destroy the asteroid, we're doomed."),
+	MessageEvent.new("robot", "*Contemplative beeping*"),
+	MessageEvent.new("trish", "No, no, we couldn't divert it's path this close."),
+	MessageEvent.new("robot", "*Pensive beeping*"),
+	MessageEvent.new("trish", "As cool as that would be, I have never seen a bubble blower that large."),
+	MessageEvent.new("robot", "*Concerned beeping*"),
+	MessageEvent.new("trish", "Impact in fifteen minutes."),
+	MessageEvent.new("robot", "*Acquiescent beeping*"),
+	MessageEvent.new("trish", "It was good knowing you too, Robot."),
+	#TODO: other events
+	MessageEvent.new("trish", "What's this!?"),
+	MessageEvent.new("robot", "*Suspicious beeping*"),
+	#trish walks to props
+	MessageEvent.new("trish", "It appears to be a handheld time machine and blueprints for an anti-matter bomb that will completely destroy the asteroid!"),
+	MessageEvent.new("robot", "*Excited beeping*"),
+	MessageEvent.new("trish", "Quick, Robot. We need to go acquire: Nuclear Control Rod, Annihilium, Anti-Matter, and Deus Ex Mechanism."),
+	MessageEvent.new("robot", "*Exhortative beeping*"),
+	MessageEvent.new("trish", "Ah, you are right. We should probably travel back a few years to buy some time."),
+	#exit through portal
+	ChangeScene.new("res://TheGrid.tscn")
 ]
-onready var textbox:RichTextLabel = self.find_node("DialogBoxText", true, false)
 
 var text_idx := -1
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	var textbox:RichTextLabel = self.find_node("DialogBoxText", true, false)
 	textbox.text = "Click to see next text"
 	pass # Replace with function body.
 
@@ -25,8 +68,8 @@ func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == BUTTON_LEFT:
 			text_idx += 1
-			if text_idx < Messages.size():
-				textbox.text = Messages[text_idx]
+			if text_idx < messages.size():
+				messages[text_idx].do(self)
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 #func _process(delta):

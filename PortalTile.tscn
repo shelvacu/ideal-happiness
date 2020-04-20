@@ -8,7 +8,7 @@
 size = 22
 font_data = ExtResource( 2 )
 
-[sub_resource type="RectangleShape2D" id=3]
+[sub_resource type="RectangleShape2D" id=2]
 extents = Vector2( 23.6502, 24.0698 )
 
 [node name="PortalTile" type="Node2D"]
@@ -35,4 +35,4 @@ frames = ExtResource( 1 )
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="ClickableArea"]
 position = Vector2( 23.4393, 24.821 )
-shape = SubResource( 3 )
+shape = SubResource( 2 )

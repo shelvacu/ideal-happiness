@@ -5,6 +5,7 @@ signal on_time_delta_changed
 var time_delta:int
 var can_edit:bool = true
 
+var is_hovering:bool = false
 var is_editing:bool = false
 var clicked_y:int = 0
 var time_delta_at_click:int = 0
@@ -19,8 +20,7 @@ func disable_edit():
 
 func set_time_delta(time_delta_:int):
 	time_delta = time_delta_
-	$AnimatedSprite.visible = time_delta != 0
-	$Label.visible = time_delta != 0
+	update_visibility()
 	var text:String
 	if time_delta < 0:
 		text = String(time_delta)
@@ -29,20 +29,42 @@ func set_time_delta(time_delta_:int):
 	$Label.text = text
 	emit_signal("on_time_delta_changed", time_delta)
 	
+
+func update_visibility():
+	var show := true
+	var full_opacity := true
+	if time_delta == 0:
+		show = is_editing or is_hovering
+		full_opacity = false
+	$AnimatedSprite.visible = show
+	$Label.visible = show
+	if full_opacity:
+		$AnimatedSprite.animation = "default"
+	else:
+		$AnimatedSprite.animation = "placing"
+
 func clickable_input(viewport:Node, event:InputEvent, shape_idx:int):
 	if not can_edit:
 		return
-	if event.get("pressed") and not event.get("doubleclick") and event.get("button_index") == BUTTON_LEFT:
-		start_edit(event.position)
-		
+	if event is InputEventMouseMotion:
+		is_hovering = true
+		update_visibility()
+		get_tree().set_input_as_handled()
+	if event is InputEventMouseButton:
+		if event.pressed and not event.doubleclick and event.button_index == BUTTON_LEFT:
+			start_edit(event.position)
+		get_tree().set_input_as_handled()
+
 func start_edit(pos:Vector2):
 	is_editing = true
 	clicked_y = pos[1]
 	time_delta_at_click = time_delta
+	update_visibility()
 	print("start_edit")
 	
 func end_edit():
 	is_editing = false
+	update_visibility()
 	print("end_edit")
 	
 func update_edit(pos:Vector2):
@@ -50,22 +72,15 @@ func update_edit(pos:Vector2):
 	set_time_delta(time_delta_at_click - delta_y / 20)
 	print("update_edit: " + String(delta_y))
 	
-func _input(event:InputEvent):
-	if not is_editing:
-		return
+func _unhandled_input(event:InputEvent):
 	if event is InputEventMouseMotion:
-		if (event.button_mask & BUTTON_LEFT) == 0:
-			return
-		update_edit(event.position)
+		is_hovering = false
+		update_visibility()
+		if is_editing and (event.button_mask & BUTTON_LEFT) != 0:
+			update_edit(event.position)
 	elif event is InputEventMouseButton:
-		if event.button_index != BUTTON_LEFT:
-			return
-		if event.pressed:
-			return
-		end_edit()
-	else:
-		return
-	# TODO colin: mark event as handled
+		if is_editing and event.button_index == BUTTON_LEFT and not event.pressed:
+			end_edit()
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
