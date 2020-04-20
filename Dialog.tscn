@@ -84,7 +84,7 @@ __meta__ = {
 
 [node name="CharacterAvatar" type="AnimatedSprite" parent="."]
 position = Vector2( 162.15, 628.837 )
-scale = Vector2( 0.362871, 0.362871 )
+scale = Vector2( 0.363, 0.363 )
 frames = SubResource( 5 )
 animation = "trish"
 

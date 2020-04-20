@@ -5,11 +5,12 @@ extends Node2D
 # var a = 2
 # var b = "text"
 
-class Event:
-	func do():
+class StoryEvent:
+	func do(thing:Node):
 		pass
 
 class MessageEvent:
+	extends StoryEvent
 	var name:String
 	var text:String
 	func _init(name_:String, text_:String):
@@ -22,10 +23,37 @@ class MessageEvent:
 		av.animation = name
 		var namebox:Label = thing.find_node("CharacterName", true, false)
 		namebox.text = name.capitalize()
-
+class ChangeScene:
+	extends StoryEvent
+	var path:String
+	func _init(path_:String):
+		path = path_
+	func do(thing:Node):
+		thing.get_tree().change_scene(path)
 onready var messages := [
-	MessageEvent.new("robot", "I am a robot!"),
-	MessageEvent.new("trish", "You are! Mr. State-the-obvious...")
+	MessageEvent.new("trish", "Hopeless! There's no way we can stop this asteroid from striking Earth!"),
+	MessageEvent.new("robot", "*Inquisitive beeping*"),
+	MessageEvent.new("trish", "No, Robot, a nuclear explosion would just shatter it."),
+	MessageEvent.new("trish", "Without a way to destroy the asteroid, we're doomed."),
+	MessageEvent.new("robot", "*Contemplative beeping*"),
+	MessageEvent.new("trish", "No, no, we couldn't divert it's path this close."),
+	MessageEvent.new("robot", "*Pensive beeping*"),
+	MessageEvent.new("trish", "As cool as that would be, I have never seen a bubble blower that large."),
+	MessageEvent.new("robot", "*Concerned beeping*"),
+	MessageEvent.new("trish", "Impact in fifteen minutes."),
+	MessageEvent.new("robot", "*Acquiescent beeping*"),
+	MessageEvent.new("trish", "It was good knowing you too, Robot."),
+	#TODO: other events
+	MessageEvent.new("trish", "What's this!?"),
+	MessageEvent.new("robot", "*Suspicious beeping*"),
+	#trish walks to props
+	MessageEvent.new("trish", "It appears to be a handheld time machine and blueprints for an anti-matter bomb that will completely destroy the asteroid!"),
+	MessageEvent.new("robot", "*Excited beeping*"),
+	MessageEvent.new("trish", "Quick, Robot. We need to go acquire: Nuclear Control Rod, Annihilium, Anti-Matter, and Deus Ex Mechanism."),
+	MessageEvent.new("robot", "*Exhortative beeping*"),
+	MessageEvent.new("trish", "Ah, you are right. We should probably travel back a few years to buy some time."),
+	#exit through portal
+	ChangeScene.new("res://TheGrid.tscn")
 ]
 
 var text_idx := -1
