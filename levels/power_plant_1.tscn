@@ -6,7 +6,6 @@
 [node name="Node2D" type="Node2D"]
 
 [node name="Background" type="Sprite" parent="."]
-visible = false
 texture = ExtResource( 3 )
 centered = false
 
