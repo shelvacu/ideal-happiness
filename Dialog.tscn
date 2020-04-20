@@ -1,10 +1,10 @@
-[gd_scene load_steps=11 format=2]
+[gd_scene load_steps=14 format=2]
 
 [ext_resource path="res://aileron/Aileron-BoldItalic.otf" type="DynamicFontData" id=1]
 [ext_resource path="res://aileron/Aileron-Bold.otf" type="DynamicFontData" id=2]
 [ext_resource path="res://aileron/Aileron-Regular.otf" type="DynamicFontData" id=3]
 [ext_resource path="res://aileron/Aileron-Italic.otf" type="DynamicFontData" id=4]
-[ext_resource path="res://test-robot.png" type="Texture" id=5]
+[ext_resource path="res://user_interfaces/avatars.png" type="Texture" id=5]
 
 [sub_resource type="DynamicFont" id=1]
 size = 21
@@ -22,13 +22,32 @@ font_data = ExtResource( 2 )
 size = 21
 font_data = ExtResource( 3 )
 
+[sub_resource type="AtlasTexture" id=7]
+flags = 4
+atlas = ExtResource( 5 )
+region = Rect2( 240, 0, 240, 240 )
+
+[sub_resource type="AtlasTexture" id=8]
+flags = 4
+atlas = ExtResource( 5 )
+region = Rect2( 0, 0, 240, 240 )
+
 [sub_resource type="SpriteFrames" id=5]
 animations = [ {
-"frames": [ ExtResource( 5 ) ],
+"frames": [ SubResource( 7 ) ],
 "loop": true,
-"name": "default",
+"name": "robot",
+"speed": 5.0
+}, {
+"frames": [ SubResource( 8 ) ],
+"loop": true,
+"name": "trish",
 "speed": 5.0
 } ]
+
+[sub_resource type="DynamicFont" id=6]
+size = 24
+font_data = ExtResource( 3 )
 
 [node name="DialogBox" type="Node2D"]
 
@@ -63,7 +82,24 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="AnimatedSprite" type="AnimatedSprite" parent="."]
-position = Vector2( 183.257, 628.758 )
-scale = Vector2( 0.175641, 0.175641 )
+[node name="CharacterAvatar" type="AnimatedSprite" parent="."]
+position = Vector2( 162.15, 628.837 )
+scale = Vector2( 0.362871, 0.362871 )
 frames = SubResource( 5 )
+animation = "trish"
+
+[node name="Polygon2D3" type="Polygon2D" parent="."]
+position = Vector2( 105.287, 6.22205 )
+color = Color( 0.231373, 0.188235, 0.141176, 1 )
+polygon = PoolVector2Array( 79.6925, 680.078, 88.0604, 664.731, 165.986, 664.731, 173.979, 680.496, 165.986, 694.877, 87.4916, 694.308 )
+
+[node name="CharacterName" type="Label" parent="."]
+margin_left = 200.965
+margin_top = 670.327
+margin_right = 266.965
+margin_bottom = 700.327
+custom_fonts/font = SubResource( 6 )
+text = "Robot"
+__meta__ = {
+"_edit_use_anchors_": false
+}
