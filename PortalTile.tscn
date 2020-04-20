@@ -12,7 +12,6 @@ font_data = ExtResource( 2 )
 script = ExtResource( 3 )
 
 [node name="Tile" parent="." instance=ExtResource( 1 )]
-script = ExtResource( 3 )
 
 [node name="Label" type="Label" parent="."]
 margin_left = 0.407814
