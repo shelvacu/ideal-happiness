@@ -99,6 +99,8 @@ static func query_from_ascii(level:String, connections:Array, portal_times:Array
 				player_y = tile_y
 			" ":
 				pass
+			".": # Godot converts adjacent spaces to tabs
+				pass
 			"|":
 				var bridge_var = bridge_vars[bridge_tiles.size()]
 				var bridge_state = PuzzleLogic.BridgeState.NOT_SOLID
@@ -144,16 +146,16 @@ static func query_from_ascii(level:String, connections:Array, portal_times:Array
 	return SolvedGrid.new(grid, solved)
 
 var level_ascii = """
-p |@n n@- E
-		 
-		 E F"""
+p.|@n.n@-.E..
+.............
+..........E.F"""
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	sol = query_from_ascii("p |@n n@- E\n         \n         E F", [0,1], [-2,-3])
+	sol = query_from_ascii(level_ascii, [0,1], [-2,-3])
 	
 	# Demo query: Change [-2] (portal time delta) to [-1], and game will lose
 	#var query = PuzzleLogic.query_from_ascii(".p  |@n  F.", [0], [-2])
