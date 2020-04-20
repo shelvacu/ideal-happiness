@@ -1,27 +1,9 @@
-[gd_scene load_steps=5 format=2]
+[gd_scene load_steps=3 format=2]
 
-[ext_resource path="res://bridge-nofall.png" type="Texture" id=1]
-[ext_resource path="res://bridge-fall.png" type="Texture" id=2]
+[ext_resource path="res://Tile.tscn" type="PackedScene" id=1]
 [ext_resource path="res://BridgeTile.gd" type="Script" id=3]
-
-[sub_resource type="SpriteFrames" id=1]
-animations = [ {
-"frames": [ ExtResource( 2 ) ],
-"loop": true,
-"name": "not-solid",
-"speed": 5.0
-}, {
-"frames": [ ExtResource( 1 ) ],
-"loop": true,
-"name": "solid",
-"speed": 5.0
-} ]
 
 [node name="Node2D" type="Node2D"]
 script = ExtResource( 3 )
 
-[node name="AnimatedSprite" type="AnimatedSprite" parent="."]
-position = Vector2( 34.2128, 34.2128 )
-scale = Vector2( 0.132626, 0.132626 )
-frames = SubResource( 1 )
-animation = "not-solid"
+[node name="Tile" parent="." instance=ExtResource( 1 )]

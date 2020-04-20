@@ -365,7 +365,8 @@ class SolutionQuery:
 			var new_query = self.duplicate()
 			new_query.tick += 1
 			new_query.time += 1
-			new_query.player_states[tick+1] = Player.new(branch.new_node, branch.new_direction, new_query.tick)
+			new_query.player_states[new_query.tick] = \
+				Player.new(branch.new_node, branch.new_direction, new_query.tick)
 			
 			for constraint in branch.constraints:
 				new_query.constraints.append_constraint(constraint)
@@ -373,10 +374,10 @@ class SolutionQuery:
 			for fact in branch.new_facts:
 				new_query.constraints.append_fact(fact)
 			
-			for constraint in branch.new_node.constraints_to_enter(time):
+			for constraint in branch.new_node.constraints_to_enter(new_query.time):
 				new_query.constraints.append_constraint(constraint)
 			
-			for fact in branch.new_node.on_enter(time):
+			for fact in branch.new_node.on_enter(new_query.time):
 				new_query.constraints.append_fact(fact)
 			
 			new_queries.append(new_query)
