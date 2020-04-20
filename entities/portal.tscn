@@ -4,6 +4,6 @@
 
 [node name="AnimatedSprite" type="AnimatedSprite"]
 frames = ExtResource( 1 )
-frame = 2
+animation = "placing"
 playing = true
 centered = false

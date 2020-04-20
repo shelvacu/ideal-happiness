@@ -79,7 +79,9 @@ class Grid:
 		var query := PuzzleLogic.SolutionQuery.new_from_facts(player, win_var, facts)
 	
 		for portal in portals:
-			query.add_portal(portal)
+			if portal.time_delta != 0:
+				# optimization (esp for debuggability)
+				query.add_portal(portal)
 		var solved := query.drive()
 		return SolvedGrid.new(self, solved)
 
@@ -155,16 +157,16 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 	return grid
 
 var level_ascii = """
-p.|@n.n@-.E..
+p@|@n@n@-@E@@
 .............
-..........E.F"""
+..........E@F"""
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	grid = grid_from_ascii(level_ascii, [0,1], [-2,-3])
+	grid = grid_from_ascii(level_ascii, [0,1], [0, -2, 0, -3, 0, 0, 0, 0])
 	
 	$SimulationPlayButton.connect("play_pressed", self, "start_simulation")
 	$SimulationPlayButton.connect("pause_pressed", self, "pause_simulation")
