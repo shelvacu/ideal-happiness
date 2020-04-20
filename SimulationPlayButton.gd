@@ -24,13 +24,13 @@ func set_play():
 	cur_graphic = Graphic.Play
 	get_children()[0].animation = "play"
 
-func _input(event:InputEvent):
+func clickable_input(viewport:Node, event:InputEvent, shape_idx:int):
 	if event is InputEventMouseButton and event.button_index == BUTTON_LEFT and event.pressed:
 		toggle()
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	pass # Replace with function body.
+	$ClickableArea.connect("input_event", self, "clickable_input")
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
