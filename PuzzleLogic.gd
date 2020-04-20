@@ -40,18 +40,28 @@ class GameNode:
 		return []
 		
 class LinearNode:
-	 ### Node which has a Left and/or a Right node adjacent to it
+	### Node which has a Left and/or a Right node adjacent to it
 	extends GameNode
 	var left:GameNode # or null, if at the edge of the map
 	var right:GameNode # or null, if at the edge of the map
+	## If left or right are null, this bool decides if we halt, or reverse the
+	## player when they try to walk to the nonexistent tile
+	var reverse_direction_if_edge:bool = true
 	func _init(left_:GameNode=null, right_:GameNode=null):
 		left = left_
 		right = right_
+		reverse_direction_if_edge = true
 	func on_exit(_time:int, player_direction:int) -> Array:
-		if player_direction == Direction.RIGHT and right != null:
-			return [Branch.new(right, Direction.RIGHT)]
-		if player_direction == Direction.LEFT and left != null:
-			return [Branch.new(left, Direction.RIGHT)]
+		if player_direction == Direction.RIGHT:
+			if right != null:
+				return [Branch.new(right, Direction.RIGHT)]
+			elif left != null and reverse_direction_if_edge:
+				return [Branch.new(left, Direction.LEFT)]
+		if player_direction == Direction.LEFT:
+			if left != null:
+				return [Branch.new(left, Direction.LEFT)]
+			elif right != null and reverse_direction_if_edge:
+				return [Branch.new(right, Direction.RIGHT)]
 		return [] 
 		
 class GoalNode:
