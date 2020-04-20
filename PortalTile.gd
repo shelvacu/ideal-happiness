@@ -36,12 +36,12 @@ func update_visibility():
 	if time_delta == 0:
 		show = is_editing or is_hovering
 		full_opacity = false
-	$AnimatedSprite.visible = show
+	$Tile.visible = show
 	$Label.visible = show
 	if full_opacity:
-		$AnimatedSprite.animation = "default"
+		$Tile.set_icon("portal")
 	else:
-		$AnimatedSprite.animation = "placing"
+		$Tile.set_icon("portal-placing")
 
 func clickable_input(viewport:Node, event:InputEvent, shape_idx:int):
 	if not can_edit:
