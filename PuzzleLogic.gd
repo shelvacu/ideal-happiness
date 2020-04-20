@@ -4,140 +4,119 @@ extends Object
 const MIN_TIME = -10
 const MAX_TIME = 20
 
-enum Determination { INCONSISTENT, INCONCLUSIVE, LOSE, WIN }
-class Reaction:
-	### When the player interacts with a tile, it can trigger new knowledge,
-	### or a win/loss condition
-	var new_facts:Array = [] # of Statement
-	var new_constraints:Array = [] # of Constraint
-	var reverse_direction:bool # Have the player move in the opposite direction
+enum Direction { LEFT, RIGHT }
+enum WinState { UNKNOWN, WIN }
+
+class Variable:
+	# Variable uses pointer comparison.
+	var _unused := "Variable" # empty classes aren't allowed, so dummy data
+	
+class Branch:
+	var new_direction:int  # from Direction enum
+	var new_tile:Tile
+	
+	func _init(new_tile_:Tile, new_direction_:int):
+		new_direction = new_direction_
+		new_tile = new_tile_
 	
 class Tile:
-	func possible_states() -> Array: # of Opaque
-		### Enumerate all the possible "states" a tile could be in.
-		### Each state corresponds to one branch along a fork when the player
-		### encounters this tile. So, stateless objects should return a
-		### one-element array
-		### N.B. the first element of this array is assumed to be the initial
-		### state of the tile at t=-infinity
-		return [null]
-	func react(_time:int) -> Reaction:
-		### called when the player enters this tile
-		return Reaction.new()
+	func constraints_to_enter(_time:int) -> Array: # of Constraint
+		### Return whatever things must be satisfied for the robot to be allowed
+		### onto this tile at the given time
+		return []
+	func on_enter(_time:int) -> Array: # of Statement
+		### Return whatever new facts we know by having the robot occupy this
+		### tile at this time.
+		return []
+	func on_exit(_player_direction:int) -> Array: # of Branch
+		### Return all possible branches that a robot could take to leave this
+		### tile. If empty, that terminates the simulation (i.e. the robot just
+		### idles here indefinitely)
+		assert(false)
+		return []
+		
+class LinearTile:
+	 ### Tile which has a Left and/or a Right tile adjacent to it
+	extends Tile
+	var left_tile:Tile # or null, if at the edge of the map
+	var right_tile:Tile # or null, if at the edge of the map
+	func _init(left_tile_:Tile=null, right_tile_:Tile=null):
+		left_tile = left_tile_
+		right_tile = right_tile_
+	func on_exit(player_direction:int) -> Array:
+		if player_direction == Direction.RIGHT and right_tile != null:
+			return [Branch.new(right_tile, Direction.RIGHT)]
+		if player_direction == Direction.LEFT and left_tile != null:
+			return [Branch.new(left_tile, Direction.RIGHT)]
+		return [] 
 		
 class GoalTile:
-	extends Tile
+	extends LinearTile
 	var tile_name = "goal"
 	var ascii = "F"
-	func react(time:int) -> Reaction:
-		var reaction = Reaction.new()
-		reaction.new_constraints = [Constraint.new(self, null, time, ConstraintType.WIN)]
-		return reaction
+	var win_var:Variable
+	func _init(win_var_:Variable):
+		self.win_var = win_var_
+	func on_enter(time:int) -> Array:
+		return [Statement.new(win_var, StatementValue.new(WinState.WIN), time)] 
 		
 class EdgeTile:
 	### Placed at the edge of the level to prevent OOB accesses.
-	extends Tile
+	extends LinearTile
 	var tile_name = "empty"  # XXX colin: should be 'edge', maybe
 	var ascii = "."
-	func react(_time:int) -> Reaction:
-		var reaction = Reaction.new()
-		reaction.reverse_direction = true
-		return reaction
-		
+
 class EmptyTile:
-	extends Tile
+	extends LinearTile
 	var tile_name = "empty"
 	var ascii = " "
 
 class ButtonTile:
-	extends Tile
+	extends LinearTile
 	var tile_name = "button-depressed"
 	var ascii = "n"
-	var attached: BridgeTile
-	func _init(attached_: BridgeTile):
+	var attached:Variable
+	func _init(attached_:Variable):
 		attached = attached_
 		
-	func react(time:int) -> Reaction:
+	func on_enter(time:int) -> Array:
 		# cause the state of the attached bridge to toggle
-		var reaction = Reaction.new()
-		reaction.new_facts = [Statement.new(attached, StatementToggle.new(), time)]
-		return reaction
+		return [Statement.new(attached, StatementToggle.new(), time)]
 
 enum BridgeState { NOT_SOLID, SOLID };
 class BridgeTile:
-	extends Tile
+	extends LinearTile
 	var tile_name = "bridge-nofall"
 	var ascii = "|"
-	var default_not_solid:bool
-	func _init(default_not_solid_:bool = true):
-		default_not_solid = default_not_solid_
-	func possible_states() -> Array:
-		# The first element is always the default state
-		if default_not_solid:
-			return [BridgeState.NOT_SOLID, BridgeState.SOLID]
-		else:
-			return [BridgeState.SOLID, BridgeState.NOT_SOLID]
-	func react(time:int) -> Reaction:
-		### If the bridge is NOT_SOLID, trigger a lose condition
-		var reaction = Reaction.new()
-		reaction.new_constraints = [Constraint.new(self, BridgeState.NOT_SOLID, time, ConstraintType.LOSE)]
-		return reaction
+	var bridge_var:Variable
+	func _init(bridge_var_:Variable):
+		bridge_var = bridge_var_
+	func constraints_to_enter(time:int) -> Array:
+		 return [Constraint.new(self.bridge_var, BridgeState.SOLID, time)] 
 
-enum Direction {LEFT, RIGHT}
 class Player:
 	var direction:int = Direction.RIGHT
-	var x:int = 0
-	var y:int = 0
+	var tile:Tile
 	var tick:int = 0
+	
+	func _init(tile_:Tile, direction_:int, tick_:int=0):
+		tile = tile_
+		direction = direction_
+		tick = tick_
+		
 	func step():
-		if direction == Direction.LEFT:
-			x -= 1
-		if direction == Direction.RIGHT:
-			x += 1
 		tick += 1
 	
 	func duplicate():
-		var c = Player.new()
-		c.direction = direction
-		c.x = x
-		c.y = y
-		c.tick = tick
-		return c
+		return Player.new(tile, direction, tick)
 		
 class Portal:
-	var x:int
-	var y:int
+	var tile:Tile
 	var time_delta:int # probably negative
 	var ascii = "@"
-	func _init(x_:int, y_:int, time_delta_:int):
-		x = x_
-		y = y_
+	func _init(tile_:Tile, time_delta_:int):
+		tile = tile_
 		time_delta = time_delta_
-
-class Grid:
-	var grid := [] # Tile
-	var width:int
-	var height:int
-	func _init(width_: int, height_: int):
-		### Initialize with Empty Tiles
-		width = width_
-		height = height_
-		for _a in range(height):
-			var row := []
-			for _b in range(width):
-				row.append(EmptyTile.new())
-			grid.append(row)
-	func at(x: int, y: int) -> Tile:
-		return grid[y][x]
-	func insert(x: int, y: int, el: Tile) -> void:
-		grid[y][x] = el
-	func ascii() -> String:
-		var res := ""
-		for line in self.grid:
-			for el in line:
-				res = res + el.ascii
-			res = res + "\n"
-		return res
 
 class StatementValue:
 	### Statement.operation option for `x = <value>` where `x` is a state
@@ -158,15 +137,20 @@ class Statement:
 	### We assume that between any two statements about a tile, its value doesn't
 	### change
 	var time:int
-	var tile: Tile
+	var variable:Variable
 	var operation # Either StatementValue or StatementMap
 
-	func _init(tile_:Tile, operation_, time_:int):
-		tile = tile_
+	func _init(variable_:Variable, operation_, time_:int):
+		variable = variable_
 		operation = operation_
 		time = time_
 	func ascii() -> String:
-		return tile.ascii + String(tile.get_instance_id()) + "=" + operation.ascii() + "@" + String(time)
+		return String(variable.get_instance_id()) + "=" + operation.ascii() + "@" + String(time)
+	
+	static func var_defaults_to(variable_:Variable, value) -> Statement:
+		### Create a statement indicating that the variable has the provided
+		### value at level start
+		return Statement.new(variable_, StatementValue.new(value), MIN_TIME) 
 	
 	static func is_earlier(a:Statement, b:Statement) -> bool:
 		# N.B. must be deterministic
@@ -174,40 +158,30 @@ class Statement:
 			return true
 		elif a.time > b.time:
 			return false
-		if a.tile < b.tile:
+		if a.variable < b.variable:
 			return true
-		elif a.tile > b.tile:
+		elif a.variable > b.variable:
 			return false
 		return a.operation < b.operation
 		# Blegh, should be able to do it like this:
-		# return [a.time, a.tile, a.operation] < [b.time, b.tile, b.operation]
+		# return [a.time, a.variable, a.operation] < [b.time, b.variable, b.operation]
 		
-enum ConstraintType { REQUIRED, WIN, LOSE }
 class Constraint:
 	### A Constraint represents some condition which "must hold" but isn't
 	### provable until the system terminates.
-	### The ConstraintType decsribes the consequence of meeting the constraint.
-	### `REQUIRED` means that if the constraint _isn't_ met, the system is in an
-	### inconsistent state.
-	### `WIN` and `LOSE` mean that meeting the Constraint triggers termination
-	### (as either a win or a lose).
-	# XXX colin: maybe WIN and LOSE aren't really Constraints, but
-	# would be better represented as "termination conditions"
 	var time:int
-	var tile:Tile
-	var type:int # ConstraintType
+	var variable:Variable
 	var value # Opaque
-	func _init(tile_: Tile, value_, time_:int, type_:int):
-		tile = tile_
+	func _init(variable_:Variable, value_, time_:int):
+		variable = variable_
 		value = value_
 		time = time_
-		type = type_
 		
 	func ascii() -> String:
 		var v = "null"
 		if value != null:
 			v = String(value)
-		return tile.ascii + String(tile.get_instance_id()) + "=" + v + "@" + String(time)
+		return String(variable.get_instance_id()) + "=" + v + "@" + String(time)
 		
 class ConstraintSystem:
 	### A ConstraintSystem encodes some things we _assume_ to be true (but have
@@ -239,13 +213,13 @@ class ConstraintSystem:
 	func append_constraint(constraint: Constraint):
 		constraints.append(constraint)
 	
-	func value_at(time:int, tile:Tile): # -> opaque
+	func value_at(time:int, variable:Variable): # -> opaque
 		### Evaluate the facts about this tile up through the provided time
 		var state = null
 		for fact in facts:
 			if fact.time > time:
 				break
-			if fact.tile != tile:
+			if fact.variable != variable:
 				continue
 			if fact.operation is StatementValue:
 				state = fact.operation.value
@@ -255,100 +229,80 @@ class ConstraintSystem:
 			else:
 				assert(false) # Unknown StatementOperation!
 		return state
-	
-	func determination() -> int: # returns Determination
-		var is_win = false
-		var is_lose = false
-		for c in constraints:
-			var value = value_at(c.time, c.tile)
-			if c.type == ConstraintType.REQUIRED and c.value != value:
-				return Determination.INCONSISTENT
-			elif c.type == ConstraintType.WIN and c.value == value:
-				is_win = true
-			elif c.type == ConstraintType.LOSE and c.value == value:
-				is_lose = true
-		if is_win:
-			return Determination.WIN
-		elif is_lose:
-			return Determination.LOSE
-		else:
-			return Determination.INCONCLUSIVE
+	func is_consistent() -> bool:
+		for c in constraints: 
+			var value = value_at(c.time, c.variable) 
+			if c.value != value:
+				return false 
+		return true
 
 class SolutionQuery:
 	### A SolutionQuery considers one way the level could unfold. We don't know
 	### if it's consistent or not until `is_terminated()` returns true
-	var grid: Grid # reference to the grid. Immutable
 	## The `tick` is the time "as experienced by the robot". It increases monotonically
 	var tick:int
 	var time:int
 	var player_states: Dictionary # maps int (tick) to Player (state at that tick)
 	var portals: Dictionary # from Portal to null (if unsolved) or int (tick entered, if solved)
+	var win_var:Variable # Takes on value of WinVar.WIN if the player has won
 	var constraints: ConstraintSystem
-	func _init(grid_:Grid, player_:Player):
-		grid = grid_
+	func _init(player:Player, win_var_:Variable, constraints_:ConstraintSystem):
 		tick = 0
 		time = 0
-		player_states[0] = player_
-		constraints = ConstraintSystem.new([], [])
+		player_states[0] = player
+		win_var = win_var_
+		constraints = constraints_
 		portals = {}
+		
+	static func new_from_facts(player:Player, win_var_:Variable, facts:Array) -> SolutionQuery:
+		# add default facts: at MIN_TIME, we know we haven't won
+		var default_facts := [Statement.new(win_var_, StatementValue.new(WinState.UNKNOWN), MIN_TIME)]
+		var constraints_ := ConstraintSystem.new([], facts + default_facts)
+		var query := SolutionQuery.new(player, win_var_, constraints_)
+		return query 
 
 	func ascii() -> String:
-		var res := grid.ascii()
-		var player = player()
-		for y in range(grid.height):
-			for x in range(grid.width):
-				var c = " "
-				for p in portals:
-					if p.x == x and p.y == y: c = "@"
-				if player.x == x and player.y == y: c = "p"
-				res = res + c
-			res = res + "\nt:" + String(time)
-			var c
-			if is_consistent():
-				c = "y"
-			else:
-				c = "n"
-			res = res + " c:" + c + " " + constraints.ascii()
+		var res := "t:" + String(tick)
+		var c
+		if is_consistent():
+			c = "y"
+		else:
+			c = "n"
+		res = res + " c:" + c + " " + constraints.ascii()
 		return res
-
-	static func new_from(other:SolutionQuery):
-		### duplicate other, but be smart and don't deep-copy the immutable grid
-		var me = SolutionQuery.new(other.grid, null)
-		me.tick = other.tick
-		me.time = other.time
-		me.player_states = other.player_states.duplicate()
-		me.portals = other.portals.duplicate()
+	
+	func duplicate() -> SolutionQuery:
+		var me := SolutionQuery.new(null, win_var, constraints.duplicate())
+		me.tick = tick
+		me.time = time
+		me.player_states = player_states.duplicate()
+		me.portals = portals.duplicate()
 		return me
 		
 	func add_portal(p: Portal):
 		self.portals[p] = null
 		
-	func is_terminated():
-		var det = _determination()
-		return time > MAX_TIME or time < MIN_TIME or det == Determination.WIN or det == Determination.LOSE
+	func is_terminated() -> bool:
+		return time > MAX_TIME or time < MIN_TIME or is_win()
 	
-	func is_consistent():
-		return _determination() != Determination.INCONSISTENT
+	func is_consistent() -> bool:
+		return constraints.is_consistent()
 	
-	func _determination():
-		return constraints.determination()
+	func is_win() -> bool:
+		return is_consistent() and constraints.value_at(time, win_var) == WinState.WIN
 	
-	func is_win():
-		return _determination() == Determination.WIN
-	
-	func player():
+	func player() -> Player:
 		return player_states[tick]
 	
-	func _tile():
-		var player = player()
-		return grid.at(player.x, player.y)
+	func _tile() -> Tile:
+		return player().tile
 	
 	func _check_enter_portal() -> Portal:
 		### If the player encounters an unused portal, associate it with a time
 		### entered, and yield it
 		var player = player()
 		for p in portals:
-			if p.x == player.x and p.y == player.y and portals[p] == null:
+			if p.tile == player.tile and portals[p] == null:
 				portals[p] = tick
 				return p
 		return null
@@ -364,40 +318,28 @@ class SolutionQuery:
 		return player_states[tick]
 	
 	func advance() -> Array: # of SolutionQuery
-		### Advance a tick and return all possible branches
-		var player = player_states[tick].duplicate()
-		tick += 1
-		time += 1
-		player_states[tick] = player
-		player.step()
-		
-		var portal = _check_enter_portal()
+		var portal := _check_enter_portal()
 		if portal != null:
 			time += portal.time_delta
 		
-		# Now add forks for every state this tile could be in
-		var tile = _tile()
-		var new_queries = []
-		for state in tile.possible_states():
-			var new_constraints = constraints.duplicate()
-			if state != null: # ignore trivial (always-true) constraints
-				new_constraints.append_constraint(Constraint.new( \
-					tile, state, time, ConstraintType.REQUIRED))
-				
-			var reaction = tile.react(time);
-			for fact in reaction.new_facts:
-				new_constraints.append_fact(fact)
-			for constraint in reaction.new_constraints:
-				new_constraints.append_constraint(constraint)
-			if reaction.reverse_direction:
-				player.direction = 1 - player.direction
+		# add forks for every branch we _could_ fork into
+		var new_queries := []
+		for branch in _tile().on_exit(player().direction):
+			var new_query = self.duplicate()
+			new_query.tick += 1
+			new_query.time += 1
+			new_query.player_states[tick+1] = Player.new(branch.new_tile, branch.new_direction, new_query.tick)
 			
-			var new_query = SolutionQuery.new_from(self)
-			new_query.constraints = new_constraints
+			for constraint in branch.new_tile.constraints_to_enter(time):
+				new_query.constraints.append_constraint(constraint)
+			
+			for fact in branch.new_tile.on_enter(time):
+				new_query.constraints.append_fact(fact)
+			
 			new_queries.append(new_query)
 		return new_queries
 	
-	static func drive_sols(queries: Array) -> Solution:
+	static func drive_queries(queries:Array, fallback:SolutionQuery) -> Solution:
 		### Drive all provided forks, and reduce to the best solution
 		var sols = []
 		for q in queries:
@@ -416,6 +358,9 @@ class SolutionQuery:
 				best_sol = sol
 			if sol.num_frames() < best_sol.num_frames():
 				best_sol = sol
+		if best_sol == null and fallback.is_consistent():
+			# neither a win nor loss condition was met. We dead-ended.
+			best_sol = Solution.new(fallback)
 		return best_sol
 		
 	func drive() -> Solution:
@@ -426,17 +371,7 @@ class SolutionQuery:
 				return Solution.new(self)
 			return null
 		# Advance once, then drive all the forks to completion
-		return SolutionQuery.drive_sols(self.advance())
-		
-	func populate_default_constraints() -> void:
-		### constrain that all tiles be in their default state at t=MIN_TIME
-		for row in grid.grid:
-			for tile in row:
-				var default_state = tile.possible_states()[0]
-				if default_state == null:
-					continue
-				self.constraints.append_fact(Statement.new( \
-					tile, StatementValue.new(default_state), MIN_TIME))
+		return SolutionQuery.drive_queries(self.advance(), self)
 		
 class Solution:
 	### A Solution provides a set of operations which can be used to render the
@@ -475,50 +410,5 @@ class Solution:
 	func player_states_at_frame(frame:int) -> Array: # of Player
 		return player_states.get(frame + earliest_time, [])
 	
-	func tile_state_at_frame(frame:int, tile:Tile):
-		return query.constraints.value_at(frame + earliest_time, tile)
-
-static func query_from_ascii(level:String, connections:Array, portals:Array):
-	var grid = Grid.new(level.length(), 1)
-	var bridge_tiles := []
-	var player_x := 0
-	var player_y := 0
-	for idx in range(level.length()):
-		var c = level[idx]
-		var tile = null
-		match c:
-			"p":
-				player_x = idx
-			" ":
-				pass
-			"|":
-				tile = BridgeTile.new(true)
-				bridge_tiles.append(tile)
-			"-":
-				tile = BridgeTile.new(false)
-				bridge_tiles.append(tile)
-			"F":
-				tile = GoalTile.new()
-			".":
-				tile = EdgeTile.new()
-		if tile != null:
-			grid.insert(idx, 0, tile)
-	var btn_idx := 0
-	for idx in range(level.length()):
-		var c = level[idx]
-		if c == "n":
-			var tile = ButtonTile.new(bridge_tiles[connections[btn_idx]])
-			grid.insert(idx, 0, tile)
-			btn_idx += 1
-	var player = Player.new()
-	player.x = player_x
-	player.y = player_y
-	var query = SolutionQuery.new(grid, player)
-	query.populate_default_constraints()
-	var portal_idx := 0
-	for idx in range(level.length()):
-		var c = level[idx]
-		if c == "@":
-			query.add_portal(Portal.new(idx, 0, portals[portal_idx]))
-			portal_idx += 1
-	return query
+	func state_at_frame(frame:int, variable:Variable):
+		return query.constraints.value_at(frame + earliest_time, variable)
