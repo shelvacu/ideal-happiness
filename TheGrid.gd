@@ -21,6 +21,11 @@ class Grid:
 	var grid := [] # of GameNode
 	var width:int
 	var height:int
+	var portals:Array = []  # of Portal
+	var facts:Array = [] # of Statement
+	var win_var # Variable
+	var player_x:int
+	var player_y:int
 	func _init(width_: int, height_: int):
 		### Initialize with Empty Nodes
 		width = width_
@@ -30,6 +35,7 @@ class Grid:
 			for _b in range(width):
 				row.append(PuzzleLogic.EmptyNode.new())
 			grid.append(row)
+		win_var = PuzzleLogic.Variable.new()
 	func link():
 		### Link adjacent tiles together
 		for y in range(height):
@@ -60,6 +66,14 @@ class Grid:
 			res = res + "\n"
 		return res
 		
+	func solve() -> SolvedGrid:
+		var player := PuzzleLogic.Player.new(at(player_x, player_y), PuzzleLogic.Direction.RIGHT)
+		var query := PuzzleLogic.SolutionQuery.new_from_facts(player, win_var, facts)
+	
+		for portal in portals:
+			query.add_portal(portal)
+		var solved := query.drive()
+		return SolvedGrid.new(self, solved)
 
 class SolvedGrid:
 	var grid:Grid
@@ -68,7 +82,7 @@ class SolvedGrid:
 		grid = grid_
 		solution = solution_ 
 
-static func query_from_ascii(level:String, connections:Array, portal_times:Array) -> SolvedGrid:
+static func grid_from_ascii(level:String, connections:Array, portal_times:Array) -> Grid:
 	var grid := Grid.new(20, 5)
 	
 	# Pre-generate some bridge vars to simplify code
@@ -81,13 +95,6 @@ static func query_from_ascii(level:String, connections:Array, portal_times:Array
 	var elevator_var := PuzzleLogic.Variable.new()
 	var elevator_tiles := []
 	
-	var portals := []
-	
-	var win_var := PuzzleLogic.Variable.new()
-	
-	var player_x := 0
-	var player_y := 0
-	var facts := []
 	var tile_x = -1
 	var tile_y = 0
 	for c in level:
@@ -95,8 +102,8 @@ static func query_from_ascii(level:String, connections:Array, portal_times:Array
 		var tile = null
 		match c:
 			"p":
-				player_x = tile_x
-				player_y = tile_y
+				grid.player_x = tile_x
+				grid.player_y = tile_y
 			" ":
 				pass
 			".": # Godot converts adjacent spaces to tabs
@@ -106,21 +113,21 @@ static func query_from_ascii(level:String, connections:Array, portal_times:Array
 				var bridge_state = PuzzleLogic.BridgeState.NOT_SOLID
 				tile = PuzzleLogic.BridgeNode.new(bridge_var)
 				bridge_tiles.append(tile)
-				facts.append(PuzzleLogic.Statement.var_defaults_to(bridge_var, bridge_state))
+				grid.facts.append(PuzzleLogic.Statement.var_defaults_to(bridge_var, bridge_state))
 			"-":
 				var bridge_var = bridge_vars[bridge_tiles.size()]
 				var bridge_state = PuzzleLogic.BridgeState.SOLID
 				tile = PuzzleLogic.BridgeNode.new(bridge_var)
 				bridge_tiles.append(tile)
-				facts.append(PuzzleLogic.Statement.var_defaults_to(bridge_var, bridge_state))
+				grid.facts.append(PuzzleLogic.Statement.var_defaults_to(bridge_var, bridge_state))
 			"n":
 				tile = PuzzleLogic.ButtonNode.new(bridge_vars[connections[btn_idx]])
 				btn_idx += 1
 			"F":
-				tile = PuzzleLogic.GoalNode.new(win_var)
+				tile = PuzzleLogic.GoalNode.new(grid.win_var)
 			"@":
-				var idx = portals.size()
-				portals.append(PuzzleLogic.Portal.new(grid.at(tile_x, tile_y), portal_times[idx]))
+				var idx = grid.portals.size()
+				grid.portals.append(PuzzleLogic.Portal.new(grid.at(tile_x, tile_y), portal_times[idx]))
 			"E":
 				tile = PuzzleLogic.ElevatorNode.new(elevator_var)
 				elevator_tiles.append(tile)
@@ -134,16 +141,10 @@ static func query_from_ascii(level:String, connections:Array, portal_times:Array
 		for e in elevator_tiles:
 			e.add_links(elevator_tiles)
 		# Elevator starts at the FIRST provided location
-		facts.append(PuzzleLogic.Statement.var_defaults_to(elevator_var, elevator_tiles[0]))
+		grid.facts.append(PuzzleLogic.Statement.var_defaults_to(elevator_var, elevator_tiles[0]))
 	grid.link()  ## DON'T MUTATE GRID AFTER THIS
 	
-	var player := PuzzleLogic.Player.new(grid.at(player_x, player_y), PuzzleLogic.Direction.RIGHT)
-	var query := PuzzleLogic.SolutionQuery.new_from_facts(player, win_var, facts)
-
-	for portal in portals:
-		query.add_portal(portal)
-	var solved := query.drive()
-	return SolvedGrid.new(grid, solved)
+	return grid
 
 var level_ascii = """
 p.|@n.n@-.E..
@@ -155,7 +156,7 @@ func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	sol = query_from_ascii(level_ascii, [0,1], [-2,-3])
+	sol = grid_from_ascii(level_ascii, [0,1], [-2,-3]).solve()
 	
 	$SimulationPlayButton.connect("play_pressed", self, "start_simulation")
 	$SimulationPlayButton.connect("pause_pressed", self, "pause_simulation")
