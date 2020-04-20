@@ -74,10 +74,11 @@ func _process(delta:float):
 		else:
 			player_node = tile_scene.instance()
 			player_node.get_children()[0].animation = "noodly-alive"
-			player_node.position.x = player.x * 50
-			player_node.position.y = player.y * 50
-			tween.interpolate_property(player_node, "scale",
-				Vector2(0.0,0.0), Vector2(1.0,1.0),
+			var x = player.x * 50
+			var y = player.y * 50
+			tween.interpolate_property(player_node, "transform",
+				Transform2D(Vector2(0, 0), Vector2(0, 0), Vector2(x+25,y+25)), 
+				Transform2D(Vector2(1, 0), Vector2(0, 1), Vector2(x,y)),
 				ANIM_TIME, Tween.TRANS_CUBIC, Tween.EASE_IN_OUT
 			)
 			self.add_child(player_node)
