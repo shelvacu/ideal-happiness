@@ -9,8 +9,8 @@ extents = Vector2( 25, 25 )
 
 [node name="AnimatedSprite" parent="." instance=ExtResource( 1 )]
 
-[node name="Area2D" type="Area2D" parent="."]
+[node name="ClickableArea" type="Area2D" parent="."]
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ClickableArea"]
 position = Vector2( 25, 25 )
 shape = SubResource( 1 )
