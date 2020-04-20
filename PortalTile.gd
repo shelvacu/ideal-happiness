@@ -38,7 +38,7 @@ func _input(event:InputEvent):
 	if not is_editing:
 		return
 	if event is InputEventMouseMotion:
-		if (event.get("button_mask") & BUTTON_LEFT) == 0:
+		if (event.button_mask & BUTTON_LEFT) == 0:
 			return
 		update_edit(event.position)
 	elif event is InputEventMouseButton:

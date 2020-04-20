@@ -1,9 +1,18 @@
-[gd_scene load_steps=2 format=2]
+[gd_scene load_steps=3 format=2]
 
 [ext_resource path="res://TheGrid.gd" type="Script" id=1]
+[ext_resource path="res://SimulationPlayButton.tscn" type="PackedScene" id=2]
 
 [node name="TheGrid" type="Node2D"]
 position = Vector2( 50, 50 )
 script = ExtResource( 1 )
+
+[node name="Control" parent="." instance=ExtResource( 2 )]
+anchor_right = 0.0
+anchor_bottom = 0.0
+margin_left = 24.075
+margin_top = 415.043
+margin_right = 24.075
+margin_bottom = 415.043
 
 [node name="Tween" type="Tween" parent="."]
