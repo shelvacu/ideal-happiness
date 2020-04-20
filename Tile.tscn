@@ -10,6 +10,7 @@ extents = Vector2( 25, 25 )
 script = ExtResource( 2 )
 
 [node name="AnimatedSprite" parent="." instance=ExtResource( 1 )]
+scale = Vector2( 1, 1 )
 animation = "button-pressed"
 
 [node name="ClickableArea" type="Area2D" parent="."]
