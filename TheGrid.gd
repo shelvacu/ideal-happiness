@@ -1,11 +1,12 @@
 extends Node2D
 
 onready var tile_scene = preload("res://Tile.tscn")
+onready var portal_scene = preload("res://PortalTile.tscn")
 const PuzzleLogic = preload("PuzzleLogic.gd")
 
 # How many seconds to spend on each frame of the solution.
-const STEP_TIME := 1.0
-const ANIM_TIME := 0.9
+const STEP_TIME := 0.2
+const ANIM_TIME := 0.18
 
 var sol:PuzzleLogic.Solution
 # time, in seconds, since the start of the scene
@@ -13,12 +14,15 @@ var time_elapsed:float = 0.0
 # These are the players visible on screen. We add or remove them over time
 var player_nodes:Array = []
 
+func empty_input(viewport:Node, event:InputEvent, shape_idx:int, x:int, y:int):
+	print(String(x) + "," + String(y) + " " + event.as_text())
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("_ready")
 	#012345678901234
 	#P |||@n@n@nF
-	var query = PuzzleLogic.query_from_ascii(".p |@n n@- F.", [0,1], [-2,-3])
+	var query = PuzzleLogic.query_from_ascii(".p  | n n - F.", [0,1], [-2,-3])
 	
 	# Demo query: Change [-2] (portal time delta) to [-1], and game will lose
 	#var query = PuzzleLogic.query_from_ascii(".p  |@n  F.", [0], [-2])
@@ -33,27 +37,42 @@ func _ready():
 			tile_node.get_children()[0].animation = tile.tile_name
 			tile_node.position.x = cellIdx * 50
 			tile_node.position.y = rowIdx * 50
+			if tile.tile_name == "empty":
+				var area = tile_node.find_node("ClickableArea", true, false)
+				area.connect("input_event", self, 
+					"empty_input", [cellIdx, rowIdx])
 			self.add_child(tile_node)
 			cellIdx += 1
 		rowIdx += 1
 	for portal in query.portals:
-		var tile_node:Node2D = tile_scene.instance()
-		tile_node.get_children()[0].animation = "portal"
+		var tile_node:Node2D = portal_scene.instance()
+		var text:String
+		if portal.time_delta < 0:
+			text = String(portal.time_delta)
+		else:
+			text = "+" + String(portal.time_delta)
+		tile_node.find_node("Label").text = text
 		tile_node.position.x = portal.x * 50
 		tile_node.position.y = portal.y * 50
 		self.add_child(tile_node)
 
-var last_frame = -1
+var prev_frame = -1
 var player_tick_to_nodes := {}
 onready var tween = $Tween
 enum Mode {Edit, Play}
 var current_mode = Mode.Edit
-# Called every frame. 'delta' is the elapsed time since the previous frame.
+var play_start := 0
+
 func _process(delta:float):
+	if current_mode == Mode.Play:
+		play_process(delta - play_start)
+
+func play_process(delta:float):
 	time_elapsed += delta
 	var frame = int(time_elapsed / STEP_TIME)
-	if frame == last_frame: return
-	last_frame = frame
+	if frame >= sol.latest_time: return
+	if frame == prev_frame: return
+	prev_frame = frame
 
 	var new_player_tick_to_nodes := {}
 	for player in sol.player_states_at_frame(frame):
