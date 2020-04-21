@@ -68,7 +68,6 @@ centered = false
 
 [node name="Asteroid" parent="." instance=ExtResource( 2 )]
 position = Vector2( 640, 120 )
-frame = 1
 
 [node name="Dialog" parent="." instance=ExtResource( 4 )]
 
@@ -83,13 +82,14 @@ flip_h = true
 visible = false
 position = Vector2( 634.094, 433.522 )
 frames = SubResource( 4 )
-frame = 2
+frame = 1
 playing = true
 
 [node name="TimeMachine" type="AnimatedSprite" parent="."]
 visible = false
 position = Vector2( 663.491, 440.724 )
 frames = SubResource( 7 )
+frame = 1
 playing = true
 
 [node name="Blueprint" type="AnimatedSprite" parent="."]
