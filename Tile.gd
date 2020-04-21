@@ -7,6 +7,11 @@ var visual_offset_y:int = 0
 func set_icon(icon:String):
 	$AnimatedSprite.animation = icon
 
+func pre_render_frame(the_grid, me):
+	### Gives an opportunity to update the icon by querying state about the
+	### grid at large.
+	### `me` is the GameNode corresponding to this tile
+	pass
 
 # Called when the node enters the scene tree for the first time.
 func _ready():

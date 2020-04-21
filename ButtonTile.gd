@@ -1,21 +1,15 @@
 extends Node2D
 
-# See Tile.gd
-var visual_offset_y:int = 1
-
-func on_state_change(changed_var, new_state, expected_var):
-	if expected_var != changed_var:
-		return
-	if new_state:
-		$Tile.set_icon("bridge-nofall")
-	else:
-		$Tile.set_icon("bridge-fall")
+var visual_offset_y = 0
 		
 func pre_render_frame(the_grid, me):
 	### Gives an opportunity to update the icon by querying state about the
 	### grid at large.
 	### `me` is the GameNode corresponding to this tile
-	pass
+	if the_grid.is_player_on_node(me):
+		$Tile.set_icon("button-pressed")
+	else:
+		$Tile.set_icon("button-depressed")
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
