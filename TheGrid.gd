@@ -17,6 +17,7 @@ const PuzzleLogic = preload("PuzzleLogic.gd")
 # How many seconds to spend on each frame of the solution.
 const STEP_TIME := 0.6
 const ANIM_TIME := STEP_TIME * 0.9
+const CELL_SIZE := 80
 
 var grid:Grid
 var sol:SolvedGrid
@@ -93,7 +94,7 @@ class SolvedGrid:
 		solution = solution_ 
 
 static func grid_from_ascii(level:String, connections:Array, portal_times:Array) -> Grid:
-	var grid := Grid.new(20, 5)
+	var grid := Grid.new(20, 8)
 	
 	# Pre-generate some bridge vars to simplify code
 	var bridge_vars := []
@@ -164,8 +165,11 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 
 var levels_ascii = [["""
 p@@|@@n@@n@@-@@E@@
-..................
-...............E@F""",[0,1],[]],["""
+..@...............
+..@...............
+..@...............
+..@...............
+..@............E@F""",[0,1],[]],["""
 p@|@n@@|@n@@F
 """,[0,1],[]]
 ]
@@ -189,8 +193,8 @@ func show_level():
 			else:
 				tile_node = tile_scene.instance()
 				tile_node.get_children()[0].animation = tile.node_name
-			tile_node.position.x = cellIdx * 50
-			tile_node.position.y = (rowIdx + tile_node.visual_offset_y) * 50
+			tile_node.position.x = cellIdx * CELL_SIZE
+			tile_node.position.y = (rowIdx + tile_node.visual_offset_y) * CELL_SIZE
 			if tile.node_name == "empty":
 				var area = tile_node.find_node("ClickableArea", true, false)
 			$TileContainer.add_child(tile_node)
@@ -204,8 +208,8 @@ func show_level():
 		connect("post_simulation_end", portal_tile, "enable_edit")
 		
 		var xy = grid.find(portal.node)
-		portal_tile.position.x = xy[0] * 50
-		portal_tile.position.y = xy[1] * 50
+		portal_tile.position.x = xy[0] * CELL_SIZE
+		portal_tile.position.y = xy[1] * CELL_SIZE
 		$TileContainer.add_child(portal_tile)
 		
 	sol = grid.solve()
@@ -276,18 +280,18 @@ func render_frame(frame:int):
 		var y = xy[1]
 		if player_node != null:
 			tween.interpolate_property(player_node, "position",
-				player_node.position, Vector2(x * 50, y * 50),
+				player_node.position, Vector2(x * CELL_SIZE, y * CELL_SIZE),
 				ANIM_TIME, Tween.TRANS_CUBIC, Tween.EASE_IN_OUT
 			)
 			player_tick_to_nodes.erase(player.tick - 1)
 		else:
 			player_node = tile_scene.instance()
 			player_node.get_children()[0].animation = "noodly-alive"
-			var to = Transform2D(Vector2(1, 0), Vector2(0, 1), Vector2(x*50,y*50))
+			var to = Transform2D(Vector2(1, 0), Vector2(0, 1), Vector2(x*CELL_SIZE,y*CELL_SIZE))
 			#var to = Transform2D.IDENTITY.translated(Vector2(x,y))
 			#var from = to.translated(Vector2(25,25)).rotated((30/360)*TAU)
 			#var from = to.translated(Vector2(25,25)).scaled(Vector2(0,0))
-			var from = Transform2D(Vector2(0,0), Vector2(0,0), Vector2(x*50+25,y*50+25))
+			var from = Transform2D(Vector2(0,0), Vector2(0,0), Vector2(x*CELL_SIZE+25,y*CELL_SIZE+25))
 			tween.interpolate_property(player_node, "transform",
 				from, to,
 				ANIM_TIME, Tween.TRANS_CUBIC, Tween.EASE_IN_OUT

@@ -10,37 +10,37 @@
 
 [sub_resource type="AtlasTexture" id=1]
 flags = 4
-atlas = ExtResource( 3 )
-region = Rect2( 80, 0, 80, 80 )
+atlas = ExtResource( 4 )
+region = Rect2( 0, 0, 80, 80 )
 
 [sub_resource type="AtlasTexture" id=2]
 flags = 4
-atlas = ExtResource( 4 )
+atlas = ExtResource( 3 )
 region = Rect2( 80, 0, 80, 80 )
 
 [sub_resource type="AtlasTexture" id=3]
 flags = 4
-atlas = ExtResource( 1 )
-region = Rect2( 0, 0, 80, 80 )
+atlas = ExtResource( 4 )
+region = Rect2( 80, 0, 80, 80 )
 
 [sub_resource type="AtlasTexture" id=4]
 flags = 4
 atlas = ExtResource( 1 )
-region = Rect2( 80, 0, 80, 80 )
+region = Rect2( 0, 0, 80, 80 )
 
 [sub_resource type="AtlasTexture" id=5]
 flags = 4
 atlas = ExtResource( 1 )
-region = Rect2( 160, 0, 80, 80 )
+region = Rect2( 80, 0, 80, 80 )
 
 [sub_resource type="AtlasTexture" id=6]
 flags = 4
-atlas = ExtResource( 3 )
-region = Rect2( 0, 0, 80, 80 )
+atlas = ExtResource( 1 )
+region = Rect2( 160, 0, 80, 80 )
 
 [sub_resource type="AtlasTexture" id=7]
 flags = 4
-atlas = ExtResource( 4 )
+atlas = ExtResource( 3 )
 region = Rect2( 0, 0, 80, 80 )
 
 [sub_resource type="AtlasTexture" id=8]
@@ -82,27 +82,27 @@ animations = [ {
 }, {
 "frames": [ SubResource( 1 ) ],
 "loop": true,
-"name": "bridge-nofall",
+"name": "button-depressed",
 "speed": 5.0
 }, {
 "frames": [ SubResource( 2 ) ],
 "loop": true,
+"name": "bridge-nofall",
+"speed": 5.0
+}, {
+"frames": [ SubResource( 3 ) ],
+"loop": true,
 "name": "button-pressed",
 "speed": 5.0
 }, {
-"frames": [ SubResource( 3 ), SubResource( 4 ), SubResource( 5 ) ],
+"frames": [ SubResource( 4 ), SubResource( 5 ), SubResource( 6 ) ],
 "loop": true,
 "name": "noodly-alive",
 "speed": 5.0
 }, {
-"frames": [ SubResource( 6 ) ],
-"loop": true,
-"name": "bridge-fall",
-"speed": 5.0
-}, {
 "frames": [ SubResource( 7 ) ],
 "loop": true,
-"name": "button-depressed",
+"name": "bridge-fall",
 "speed": 5.0
 }, {
 "frames": [ SubResource( 8 ), SubResource( 9 ), SubResource( 10 ) ],

@@ -7,5 +7,5 @@
 script = ExtResource( 2 )
 
 [node name="AnimatedSprite" parent="." instance=ExtResource( 1 )]
+position = Vector2( 40, 40 )
 scale = Vector2( 1, 1 )
-animation = "portal-placing"
