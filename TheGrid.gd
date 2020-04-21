@@ -197,7 +197,7 @@ func show_level():
 				tile_node.get_children()[0].animation = tile.node_name
 			connect("pre_render_frame", tile_node, "pre_render_frame", [tile])
 			tile_node.position.x = cellIdx * 50
-			tile_node.position.y = (rowIdx + tile_node.visual_offset_y) * 50
+			tile_node.position.y = (rowIdx + tile_node.visual_offset_y()) * 50
 			if tile.node_name == "empty":
 				var area = tile_node.find_node("ClickableArea", true, false)
 			$TileContainer.add_child(tile_node)
