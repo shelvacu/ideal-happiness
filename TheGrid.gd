@@ -8,8 +8,12 @@ signal post_simulation_end
 # Emitted with the Variable, and its state, whenever we calculate a value for a
 # variable
 signal any_variable_changed
+# We call this (passing self) after we calculate the next frame, but before we
+# display it, that way tiles can update their appearance
+signal pre_render_frame
 
 onready var bridge_scene = preload("res://BridgeTile.tscn")
+onready var button_scene = preload("res://ButtonTile.tscn")
 onready var tile_scene = preload("res://Tile.tscn")
 onready var portal_scene = preload("res://PortalTile.tscn")
 const PuzzleLogic = preload("PuzzleLogic.gd")
@@ -164,12 +168,11 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 	return grid
 
 var levels_ascii = [["""
-p@@|@@n@@n@@-@@E@@
-..@...............
-..@...............
-..@...............
-..@...............
-..@............E@F""",[0,1],[]],["""
+
+
+p@@|@@n@n@-@@E@@
+
+.............E@F""",[0,1],[]],["""
 p@|@n@@|@n@@F
 """,[0,1],[]]
 ]
@@ -190,11 +193,14 @@ func show_level():
 			if tile.node_name == "bridge-nofall":
 				tile_node = bridge_scene.instance()
 				connect("any_variable_changed", tile_node, "on_state_change", [tile.bridge_var])
+			elif tile.node_name == "button-depressed":
+				tile_node = button_scene.instance()
 			else:
 				tile_node = tile_scene.instance()
 				tile_node.get_children()[0].animation = tile.node_name
+			connect("pre_render_frame", tile_node, "pre_render_frame", [tile])
 			tile_node.position.x = cellIdx * CELL_SIZE
-			tile_node.position.y = (rowIdx + tile_node.visual_offset_y) * CELL_SIZE
+			tile_node.position.y = (rowIdx + tile_node.visual_offset_y()) * CELL_SIZE
 			if tile.node_name == "empty":
 				var area = tile_node.find_node("ClickableArea", true, false)
 			$TileContainer.add_child(tile_node)
@@ -232,11 +238,18 @@ enum Mode {Edit, Play, Pause}
 var current_mode = Mode.Edit
 var play_start := 0
 
+func is_player_on_node(node):
+	for player in sol.solution.player_states_at_frame(prev_frame):
+		if player.node == node:
+			return true
+	return false
+
 func update_tile_icons(frame:int):
 	# Let all the tiles know their new states
 	var variable_values = sol.solution.all_states_at_frame(frame)
 	for vari in variable_values:
 		emit_signal("any_variable_changed", vari, variable_values[vari])
+	emit_signal("pre_render_frame", self)
 
 func start_simulation():
 	if current_mode == Mode.Edit:
