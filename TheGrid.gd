@@ -167,19 +167,24 @@ static func grid_from_ascii(level:String, connections:Array, portal_times:Array)
 	
 	return grid
 
-var levels_ascii = [["""
+onready var levels_ascii = [["""
+
+
+
+
+p@|@n@F
+""",[0,1],[], $Level01Tiles],["""
 
 
 p@@|@@n@n@-@@E@@
 
-.............E@F""",[0,1],[]],["""
-p@|@n@@|@n@@F
-""",[0,1],[]]
+.............E@F""",[0,1],[],$Level02Tiles]
 ]
 
 var curr_level = 0
 
 func show_level():
+	levels_ascii[curr_level][3].show()
 	grid = grid_from_ascii(levels_ascii[curr_level][0], levels_ascii[curr_level][1], levels_ascii[curr_level][2])
 	# Demo query: Change [-2] (portal time delta) to [-1], and game will lose
 	#var query = PuzzleLogic.query_from_ascii(".p  |@n  F.", [0], [-2])
@@ -224,6 +229,7 @@ func show_level():
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	print("_ready")
+	print($Level01Tiles)
 	
 	$SimulationPlayButton.connect("play_pressed", self, "start_simulation")
 	$SimulationPlayButton.connect("pause_pressed", self, "pause_simulation")
@@ -319,11 +325,12 @@ func render_frame(frame:int):
 
 func _on_NextLevelArea_input_event(viewport, event, shape_idx):
 	if event is InputEventMouseButton and event.pressed and event.button_index == BUTTON_LEFT:
-		stop_simulation()
-		curr_level += 1
-		if curr_level >= levels_ascii.size():
+		if curr_level >= levels_ascii.size() - 1:
 			$NextLevel/Label.text = "You beat the last level, congrats!"
 			return
+		levels_ascii[curr_level][3].hide()
+		curr_level += 1
+		stop_simulation()
 		for c in $TileContainer.get_children():
 			$TileContainer.remove_child(c)
 		$NextLevel.hide()
