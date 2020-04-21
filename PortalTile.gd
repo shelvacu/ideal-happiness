@@ -19,7 +19,7 @@ func disable_edit():
 	can_edit = false
 
 func set_time_delta(time_delta_:int):
-	time_delta = time_delta_
+	time_delta = max(-10, min(0, time_delta_))
 	update_visibility()
 	var text:String
 	if time_delta < 0:
