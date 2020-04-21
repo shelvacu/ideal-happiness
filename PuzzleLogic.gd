@@ -126,7 +126,7 @@ class ElevatorNode:
 		var constraint = Constraint.new(elevator_var, self, time)
 		var traveling_branches := []
 		for node in linked:
-			var fact = Statement.new(elevator_var, StatementValue.new(self), time+1)
+			var fact = Statement.new(elevator_var, StatementValue.new(node), time+1)
 			traveling_branches.append(Branch.new(node, player_direction, [constraint], [fact]))
 		return adjacent_branches + traveling_branches
 

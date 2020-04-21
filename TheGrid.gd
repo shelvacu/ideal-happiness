@@ -14,6 +14,7 @@ signal pre_render_frame
 
 onready var bridge_scene = preload("res://BridgeTile.tscn")
 onready var button_scene = preload("res://ButtonTile.tscn")
+onready var elevator_scene = preload("res://ElevatorTile.tscn")
 onready var tile_scene = preload("res://Tile.tscn")
 onready var portal_scene = preload("res://PortalTile.tscn")
 const PuzzleLogic = preload("PuzzleLogic.gd")
@@ -198,6 +199,9 @@ func show_level():
 			if tile.node_name == "bridge-nofall":
 				tile_node = bridge_scene.instance()
 				connect("any_variable_changed", tile_node, "on_state_change", [tile.bridge_var])
+			elif tile.node_name == "elevator_open":
+				tile_node = elevator_scene.instance()
+				connect("any_variable_changed", tile_node, "on_state_change", [tile.elevator_var, tile])
 			elif tile.node_name == "button-depressed":
 				tile_node = button_scene.instance()
 			else:
