@@ -83,6 +83,7 @@ flip_h = true
 visible = false
 position = Vector2( 634.094, 433.522 )
 frames = SubResource( 4 )
+frame = 1
 playing = true
 
 [node name="TimeMachine" type="AnimatedSprite" parent="."]
