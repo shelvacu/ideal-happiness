@@ -109,7 +109,7 @@ class ElevatorNode:
 	### with that elevator_var is a pointer to whichever ElevatorNode houses
 	### the elevator.
 	extends LinearNode
-	var node_name = "goal"  # TODO colin
+	var node_name = "elevator_open"
 	var ascii = "+"
 	var elevator_var:Variable
 	var linked:Array # of ElevatorNode
